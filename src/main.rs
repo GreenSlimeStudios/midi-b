@@ -1,4 +1,4 @@
-// use bevy::core_pipeline::clear_color::ClearColorConfig;
+use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
 
 use bevy::prelude::*;
@@ -184,27 +184,11 @@ fn handle_note(note: i32, act_notes: &mut Vec<i32>) {
 }
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
-        // camera_2d: Camera2d {
-        //     clear_color: ClearColorConfig::Custom(Color::GREEN),
-        // },
+        camera_2d: Camera2d {
+            clear_color: ClearColorConfig::Custom(Color::BLACK),
+        },
         ..default()
     });
-    // commands.spawn((
-    //     SpriteBundle {
-    //         sprite: Sprite {
-    //             custom_size: Some(Vec2::new(20.0, 100.0)),
-    //             ..default()
-    //         },
-    //         transform: Transform::from_xyz(50., 0., 0.),
-    //         ..default()
-    //     },
-    //     Note {
-    //         x: 0.,
-    //         y: 0.,
-    //         note_id: 46,
-    //         id: 0,
-    //     },
-    // ));
 }
 
 fn move_notes(mut notes: Query<(&mut Transform, &Note)>, time: Res<Time>) {
@@ -225,6 +209,8 @@ fn notes_spawner(
     // println!("{:?}",contents);
 
     let notes: Vec<i32>;
+    let res = &window.single().resolution;
+    let n_width = res.width() / 88.;
 
     if !notes_string.is_empty() {
         notes = notes_string
@@ -240,12 +226,13 @@ fn notes_spawner(
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
-                        custom_size: Some(Vec2::new(NOTE_WIDTH, 1.0)),
+                        custom_size: Some(Vec2::new(n_width, 1.0)),
                         ..default()
                     },
                     transform: Transform::from_xyz(
-                        notes[i] as f32 * NOTE_WIDTH - window.single().resolution.width() / 2.,
-                        -window.single().resolution.height() / 2.,
+                        notes[i] as f32 * n_width - res.width() / 2. - 21 as f32 * n_width
+                            + n_width / 2.,
+                        -res.height() / 2.,
                         0.,
                     ),
                     ..default()
@@ -266,14 +253,14 @@ fn notes_spawner(
             //grow note
             let mut n = 0;
             let mut nn = 0;
-            for (mut transform, note, mut sprite) in &mut transform_notes.iter_mut() {
+            for (_, note, _) in &mut transform_notes.iter_mut() {
                 if note.note_id == active_notes.active_notes[i] {
                     n = nn;
                 }
                 nn += 1;
             }
             nn = 0;
-            for (mut transform, note, mut sprite) in &mut transform_notes.iter_mut() {
+            for (mut transform, _, mut sprite) in &mut transform_notes.iter_mut() {
                 if nn == n {
                     sprite.custom_size = Some(Vec2 {
                         x: sprite.custom_size.unwrap().x,
