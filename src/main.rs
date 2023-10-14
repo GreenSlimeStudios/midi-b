@@ -2,6 +2,7 @@ use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
 
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use midir::{Ignore, MidiInput};
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
@@ -28,6 +29,11 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
+        .insert_resource(NotePlacemnt {
+            notes_position: HashMap::new(),
+            blacks: Vec::new(),
+        })
+        .add_systems(Startup, note_placement)
         .insert_resource(ActiveNotes {
             active_notes: Vec::new(),
         })
@@ -202,6 +208,7 @@ fn notes_spawner(
     window: Query<&Window>,
     mut transform_notes: Query<(&mut Transform, &Note, &mut Sprite)>,
     time: Res<Time>,
+    notes_placement: Res<NotePlacemnt>,
 ) {
     let contents = fs::read_to_string("info.txt").expect("Something went wrong reading the file");
     let mut notes_string: Vec<&str> = contents.split("\n").collect();
@@ -210,7 +217,7 @@ fn notes_spawner(
 
     let notes: Vec<i32>;
     let res = &window.single().resolution;
-    let n_width = res.width() / 88.;
+    let n_width = res.width() / 52.0;
 
     if !notes_string.is_empty() {
         notes = notes_string
@@ -222,15 +229,32 @@ fn notes_spawner(
     }
 
     for i in 0..notes.len() {
+        let nn_width = if notes_placement.blacks.contains(&(notes[i] as i8)) {
+            res.width() / 88.0
+        } else {
+            res.width() / 52.0
+        };
         if !active_notes.active_notes.contains(&notes[i]) {
             commands.spawn((
                 SpriteBundle {
                     sprite: Sprite {
-                        custom_size: Some(Vec2::new(n_width, 1.0)),
+                        custom_size: Some(Vec2::new(nn_width, 1.0)),
+                        color: if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                            Color::RED
+                        } else {
+                            Color::WHITE
+                        },
                         ..default()
                     },
                     transform: Transform::from_xyz(
-                        notes[i] as f32 * n_width - res.width() / 2. - 21 as f32 * n_width
+                        notes_placement
+                            .notes_position
+                            .get(&(notes[i] as i8))
+                            .unwrap() as &f32
+                            * n_width
+                            // / 88.
+                            - res.width() / 2.
+                            - 12 as f32 * n_width
                             + n_width / 2.,
                         -res.height() / 2.,
                         0.,
@@ -286,4 +310,35 @@ pub struct Note {
 #[derive(Resource)]
 pub struct ActiveNotes {
     active_notes: Vec<i32>,
+}
+#[derive(Resource)]
+pub struct NotePlacemnt {
+    pub notes_position: HashMap<i8, f32>,
+    pub blacks: Vec<i8>,
+}
+pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
+    let mut blacks = Vec::new();
+    let mut n = 0;
+    for i in 0..10 {
+        for j in 0..12 {
+            if [1, 3, 6, 8, 10].contains(&j) {
+                blacks.push(i * 12 + j);
+                notes_placement
+                    .notes_position
+                    .insert((i * 12 + j) as i8, n as f32 - 0.5);
+            } else {
+                notes_placement
+                    .notes_position
+                    .insert((i * 12 + j) as i8, n as f32);
+
+                n += 1;
+            }
+        }
+    }
+    notes_placement.blacks = blacks;
+    // for i in 0..10 {
+    //     for j in 0..12 {
+    //         // if j.
+    //     }
+    // }
 }
