@@ -219,6 +219,17 @@ fn grow_notes(
     for (note, handle) in &mut note_meshes.note_handles.iter() {
         // info!("{:?},{:?}", note, handle);
         let mut mesh = meshes.get_mut(handle).unwrap();
+        // mesh.insert_attribute(mesh::ATTRIBUT)
+        // let vertex_colors: Vec<[f32; 4]> = vec![
+        //     Color::RED.as_rgba_f32(),
+        //     Color::RED.as_rgba_f32(),
+        //     Color::BLUE.as_rgba_f32(),
+        //     Color::BLUE.as_rgba_f32(),
+        // ];
+
+        // // Insert the vertex colors as an attribute
+        // mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vertex_colors.clone());
+
         // info!("{:?}", mesh);
     }
     // info!("{:?}", active_notes.active_notes);
@@ -277,14 +288,44 @@ fn notes_spawner(
         };
 
         if !active_notes.active_notes.contains(&notes[i]) {
-            let mesh = Capsule2d {
-                radius: nn_width / 2.,
-                half_length: 1.,
-                // half_size: Vec2::new(nn_width / 2., 10.),
-                ..Default::default()
+            // let mesh = Capsule2d {
+            //     radius: nn_width / 2.,
+            //     half_length: 10.,
+            //     // half_size: Vec2::new(nn_width / 2., 10.),
+            //     ..Default::default()
+            // };
+            let mesh = Rectangle {
+                half_size: Vec2::new(nn_width / 2. - 2., 1.),
+                ..default()
             };
-            // mesh.insert_attribute(Mesh::)
+            let vertex_colors: Vec<[f32; 4]> = vec![
+                Color::GREEN.as_rgba_f32(),
+                Color::GREEN.as_rgba_f32(),
+                Color::BLUE.as_rgba_f32(),
+                Color::BLUE.as_rgba_f32(),
+            ];
+            let vertex_colors_blacks: Vec<[f32; 4]> = vec![
+                Color::RED.as_rgba_f32(),
+                Color::RED.as_rgba_f32(),
+                Color::PINK.as_rgba_f32(),
+                Color::PINK.as_rgba_f32(),
+            ];
+
+            // mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vertex_colors.clone()); // mesh.insert_attribute(Mesh::)
+            // Insert the vertex colors as an attribute
             let mesh_handle: Handle<Mesh> = meshes.add(mesh);
+
+            meshes
+                .get_mut(mesh_handle.clone())
+                .unwrap()
+                .insert_attribute(
+                    Mesh::ATTRIBUTE_COLOR,
+                    if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                        vertex_colors_blacks
+                    } else {
+                        vertex_colors
+                    },
+                );
 
             // note_meshes.note_meshes.push(&notes[i], mesh);
             // mesh.is_strong();
@@ -296,13 +337,15 @@ fn notes_spawner(
                 MaterialMesh2dBundle {
                     // mesh: meshes.add(Capsule2d::new(nn_width / 2., 15.)).into(),
                     mesh: mesh_handle.clone().into(),
-                    material: materials.add(
-                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
-                            Color::RED
-                        } else {
-                            Color::WHITE
-                        },
-                    ),
+                    material: materials.add(ColorMaterial::default()),
+                    // material: materials.add(
+                    //     if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                    //         Color::RED
+                    //     } else {
+                    //         Color::WHITE
+                    //     },
+                    // ),
+
                     // mesh: bevy::sprite::meshes.add(Rectangle::default()).into(),
                     // sprite: Sprite {
                     //     custom_size: Some(Vec2::new(nn_width, 1.0)),
@@ -368,7 +411,7 @@ fn notes_spawner(
                     // transform.scale = Vec3::new(10., 1., 1.);transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
                     transform.scale = Vec3::new(
                         1.,
-                        (time.delta_seconds() * NOTE_SPEED) / 20. + transform.scale.y,
+                        (time.delta_seconds() * NOTE_SPEED) / 2. + transform.scale.y,
                         1.,
                     );
                     break;
