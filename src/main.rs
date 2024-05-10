@@ -35,6 +35,9 @@ fn main() {
             notes_position: HashMap::new(),
             blacks: Vec::new(),
         })
+        .insert_resource(NoteMeshes {
+            note_handles: Vec::new(),
+        })
         .add_systems(Startup, note_placement)
         .insert_resource(ActiveNotes {
             active_notes: Vec::new(),
@@ -207,30 +210,46 @@ fn move_notes(mut notes: Query<(&mut Transform, &Note)>, time: Res<Time>) {
     }
 }
 fn grow_notes(
-    notes: Query<(&Transform, &Note, &Handle<Mesh>)>,
+    mut notes: Query<(&mut Transform, &Note)>,
     time: Res<Time>,
     mut meshes: ResMut<Assets<Mesh>>,
     active_notes: Res<ActiveNotes>,
+    mut note_meshes: ResMut<NoteMeshes>,
 ) {
-    // info!("{:?}", active_notes.active_notes);
-    for (transform, note, handle) in notes.iter() {
-        //grow em
-        info!("{:?}, {}", note.note_id, note.id);
-        // no logs :(
-        if active_notes.active_notes.contains(&(note.id)) {
-            info!("yes");
-        }
+    for (note, handle) in &mut note_meshes.note_handles.iter() {
+        // info!("{:?},{:?}", note, handle);
+        let mut mesh = meshes.get_mut(handle).unwrap();
+        // info!("{:?}", mesh);
     }
+    // info!("{:?}", active_notes.active_notes);
+
+    // for (mut transform, note) in &mut notes.iter_mut() {
+    //     //grow em
+    //     info!("{:?}, {}", note.note_id, note.id);
+    //     // no logs :(
+    //     if active_notes.active_notes.contains(&(note.note_id)) {
+    //         // transform.scale()
+    //         transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
+    //         transform.scale = Vec3::new(
+    //             1.,
+    //             (time.delta_seconds() * NOTE_SPEED) / 20. + transform.scale.y,
+    //             1.,
+    //         );
+    //         info!("yes");
+    //     }
+    // }
 }
+
 fn notes_spawner(
     mut commands: Commands,
     mut active_notes: ResMut<ActiveNotes>,
     window: Query<&Window>,
-    mut transform_notes: Query<(&mut Transform, &Note, &mut Handle<Mesh>)>,
+    mut transform_notes: Query<(&mut Transform, &Note)>,
     time: Res<Time>,
     notes_placement: Res<NotePlacemnt>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut note_meshes: ResMut<NoteMeshes>,
 ) {
     let contents = fs::read_to_string("info.txt").expect("Something went wrong reading the file");
     let mut notes_string: Vec<&str> = contents.split("\n").collect();
@@ -258,10 +277,16 @@ fn notes_spawner(
         };
 
         if !active_notes.active_notes.contains(&notes[i]) {
-            let mesh = meshes.add(Rectangle {
-                half_size: Vec2::new(nn_width / 2., 10.),
+            let mesh = Capsule2d {
+                radius: nn_width / 2.,
+                half_length: 1.,
+                // half_size: Vec2::new(nn_width / 2., 10.),
                 ..Default::default()
-            });
+            };
+            // mesh.insert_attribute(Mesh::)
+            let mesh_handle: Handle<Mesh> = meshes.add(mesh);
+
+            // note_meshes.note_meshes.push(&notes[i], mesh);
             // mesh.is_strong();
             // info!("{}", mesh.is_strong());
             // info!("{:?}", mesh);
@@ -270,7 +295,7 @@ fn notes_spawner(
             commands.spawn((
                 MaterialMesh2dBundle {
                     // mesh: meshes.add(Capsule2d::new(nn_width / 2., 15.)).into(),
-                    mesh: mesh.into(),
+                    mesh: mesh_handle.clone().into(),
                     material: materials.add(
                         if notes_placement.blacks.contains(&(notes[i] as i8)) {
                             Color::RED
@@ -314,6 +339,7 @@ fn notes_spawner(
                     id: 0,
                 },
             ));
+            note_meshes.note_handles.push((notes[i], mesh_handle));
         }
     }
     // transform_notes = transform_notes.into_iter().rev();
@@ -322,16 +348,15 @@ fn notes_spawner(
             //grow note
             let mut n = 0;
             let mut nn = 0;
-            for (_, note, _) in &mut transform_notes.iter_mut() {
+            for (_, note) in &mut transform_notes.iter_mut() {
                 if note.note_id == active_notes.active_notes[i] {
                     n = nn;
                 }
                 nn += 1;
             }
             nn = 0;
-            for (mut transform, _, sprite_handle) in &mut transform_notes.iter_mut() {
+            for (mut transform, _) in &mut transform_notes.iter_mut() {
                 if nn == n {
-                    info!("{:?}", sprite_handle);
                     // let mut mesh = meshes.get_mut(sprite_handle).unwrap();
                     // let mut mesh = meshes.get_mut(sprite_handle).unwrap();
 
@@ -340,7 +365,12 @@ fn notes_spawner(
                     //     y: sprite.half_size.unwrap().y + time.delta_seconds() * NOTE_SPEED,
                     // });
                     transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
-                    // transform.scale = Vec3::new(10., 1., 1.);
+                    // transform.scale = Vec3::new(10., 1., 1.);transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
+                    transform.scale = Vec3::new(
+                        1.,
+                        (time.delta_seconds() * NOTE_SPEED) / 20. + transform.scale.y,
+                        1.,
+                    );
                     break;
                 }
                 nn += 1;
@@ -360,6 +390,10 @@ pub struct Note {
 #[derive(Resource)]
 pub struct ActiveNotes {
     active_notes: Vec<i32>,
+}
+#[derive(Resource)]
+pub struct NoteMeshes {
+    pub note_handles: Vec<(i32, Handle<Mesh>)>,
 }
 #[derive(Resource)]
 pub struct NotePlacemnt {
