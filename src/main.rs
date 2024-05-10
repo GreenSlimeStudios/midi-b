@@ -1,7 +1,9 @@
-use bevy::core_pipeline::clear_color::ClearColorConfig;
+// use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
 
 use bevy::prelude::*;
+use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+// use bevy::sprite::MaterialMesh2dBundle;
 use bevy::utils::HashMap;
 use midir::{Ignore, MidiInput};
 use std::error::Error;
@@ -39,6 +41,7 @@ fn main() {
         })
         .add_systems(Update, move_notes)
         .add_systems(Update, notes_spawner)
+        .add_systems(Update, grow_notes)
         .run();
 }
 fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -191,7 +194,8 @@ fn handle_note(note: i32, act_notes: &mut Vec<i32>) {
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
         camera_2d: Camera2d {
-            clear_color: ClearColorConfig::Custom(Color::BLACK),
+            // clear_color: ClearColorConfig::Custom(Color::BLACK),
+            // cle
         },
         ..default()
     });
@@ -202,13 +206,31 @@ fn move_notes(mut notes: Query<(&mut Transform, &Note)>, time: Res<Time>) {
         transform.translation.y += NOTE_SPEED * time.delta_seconds();
     }
 }
+fn grow_notes(
+    notes: Query<(&Transform, &Note, &Handle<Mesh>)>,
+    time: Res<Time>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    active_notes: Res<ActiveNotes>,
+) {
+    // info!("{:?}", active_notes.active_notes);
+    for (transform, note, handle) in notes.iter() {
+        //grow em
+        info!("{:?}, {}", note.note_id, note.id);
+        // no logs :(
+        if active_notes.active_notes.contains(&(note.id)) {
+            info!("yes");
+        }
+    }
+}
 fn notes_spawner(
     mut commands: Commands,
     mut active_notes: ResMut<ActiveNotes>,
     window: Query<&Window>,
-    mut transform_notes: Query<(&mut Transform, &Note, &mut Sprite)>,
+    mut transform_notes: Query<(&mut Transform, &Note, &mut Handle<Mesh>)>,
     time: Res<Time>,
     notes_placement: Res<NotePlacemnt>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let contents = fs::read_to_string("info.txt").expect("Something went wrong reading the file");
     let mut notes_string: Vec<&str> = contents.split("\n").collect();
@@ -230,22 +252,42 @@ fn notes_spawner(
 
     for i in 0..notes.len() {
         let nn_width = if notes_placement.blacks.contains(&(notes[i] as i8)) {
-            res.width() / 88.0
+            res.width() / 72.0
         } else {
-            res.width() / 52.0
+            res.width() / 52.0 - 2.
         };
+
         if !active_notes.active_notes.contains(&notes[i]) {
+            let mesh = meshes.add(Rectangle {
+                half_size: Vec2::new(nn_width / 2., 10.),
+                ..Default::default()
+            });
+            // mesh.is_strong();
+            // info!("{}", mesh.is_strong());
+            // info!("{:?}", mesh);
+            // info!("{:?}", meshes.ids().collect::<Vec<_>>());
+
             commands.spawn((
-                SpriteBundle {
-                    sprite: Sprite {
-                        custom_size: Some(Vec2::new(nn_width, 1.0)),
-                        color: if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                MaterialMesh2dBundle {
+                    // mesh: meshes.add(Capsule2d::new(nn_width / 2., 15.)).into(),
+                    mesh: mesh.into(),
+                    material: materials.add(
+                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
                             Color::RED
                         } else {
                             Color::WHITE
                         },
-                        ..default()
-                    },
+                    ),
+                    // mesh: bevy::sprite::meshes.add(Rectangle::default()).into(),
+                    // sprite: Sprite {
+                    //     custom_size: Some(Vec2::new(nn_width, 1.0)),
+                    //     color: if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                    //         Color::RED
+                    //     } else {
+                    //         Color::WHITE
+                    //     },
+                    //     ..default()
+                    // },
                     transform: Transform::from_xyz(
                         notes_placement
                             .notes_position
@@ -257,7 +299,11 @@ fn notes_spawner(
                             - 12 as f32 * n_width
                             + n_width / 2.,
                         -res.height() / 2.,
-                        0.,
+                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                            1.
+                        } else {
+                            0.
+                        },
                     ),
                     ..default()
                 },
@@ -270,7 +316,6 @@ fn notes_spawner(
             ));
         }
     }
-
     // transform_notes = transform_notes.into_iter().rev();
     for i in 0..active_notes.active_notes.len() {
         if notes.contains(&active_notes.active_notes[i]) {
@@ -284,13 +329,18 @@ fn notes_spawner(
                 nn += 1;
             }
             nn = 0;
-            for (mut transform, _, mut sprite) in &mut transform_notes.iter_mut() {
+            for (mut transform, _, sprite_handle) in &mut transform_notes.iter_mut() {
                 if nn == n {
-                    sprite.custom_size = Some(Vec2 {
-                        x: sprite.custom_size.unwrap().x,
-                        y: sprite.custom_size.unwrap().y + time.delta_seconds() * NOTE_SPEED,
-                    });
+                    info!("{:?}", sprite_handle);
+                    // let mut mesh = meshes.get_mut(sprite_handle).unwrap();
+                    // let mut mesh = meshes.get_mut(sprite_handle).unwrap();
+
+                    // sprite.half_size = Some(Vec2 {
+                    //     x: sprite.half_size.unwrap().x,
+                    //     y: sprite.half_size.unwrap().y + time.delta_seconds() * NOTE_SPEED,
+                    // });
                     transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
+                    // transform.scale = Vec3::new(10., 1., 1.);
                     break;
                 }
                 nn += 1;
@@ -300,7 +350,7 @@ fn notes_spawner(
     active_notes.active_notes = notes.clone();
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct Note {
     pub x: f32,
     pub y: f32,

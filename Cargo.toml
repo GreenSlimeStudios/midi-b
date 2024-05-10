@@ -11,5 +11,5 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = {version = "0.11.3", features=["dynamic_linking"]}
+bevy = {version = "0.13.2", features=["dynamic_linking"]}
 midir = "0.9.1"

@@ -1,0 +1,78 @@
+This is my spawn function
+```rust
+let mesh = meshes.add(Rectangle {
+                half_size: Vec2::new(nn_width / 2., 10.),
+                ..Default::default()
+            });
+            // mesh.is_strong();
+            // info!("{}", mesh.is_strong());
+            // info!("{:?}", mesh);
+            // info!("{:?}", meshes.ids().collect::<Vec<_>>());
+
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    // mesh: meshes.add(Capsule2d::new(nn_width / 2., 15.)).into(),
+                    mesh: mesh.into(),
+                    material: materials.add(
+                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                            Color::RED
+                        } else {
+                            Color::WHITE
+                        },
+                    ),
+                    // mesh: bevy::sprite::meshes.add(Rectangle::default()).into(),
+                    // sprite: Sprite {
+                    //     custom_size: Some(Vec2::new(nn_width, 1.0)),
+                    //     color: if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                    //         Color::RED
+                    //     } else {
+                    //         Color::WHITE
+                    //     },
+                    //     ..default()
+                    // },
+                    transform: Transform::from_xyz(
+                        notes_placement
+                            .notes_position
+                            .get(&(notes[i] as i8))
+                            .unwrap() as &f32
+                            * n_width
+                            // / 88.
+                            - res.width() / 2.
+                            - 12 as f32 * n_width
+                            + n_width / 2.,
+                        -res.height() / 2.,
+                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                            1.
+                        } else {
+                            0.
+                        },
+                    ),
+                    ..default()
+                },
+                Note {
+                    x: 0.,
+                    y: 0.,
+                    note_id: notes[i],
+                    id: 0,
+                },
+            ));
+```
+And this is my system to change it
+```rust
+fn grow_notes(
+    notes: Query<(&Transform, &Note, &Handle<Mesh>)>,
+    time: Res<Time>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    active_notes: Res<ActiveNotes>,
+) {
+    // info!("{:?}", active_notes.active_notes);
+    for (transform, note, handle) in notes.iter() {
+        info!("{:?}, {}", note.note_id, note.id);
+        // no logs :(
+        if active_notes.active_notes.contains(&(note.id)) {
+            info!("yes");
+        }
+    }
+}
+```
+and i get no results from the info macro but when i delete the  &Handle<Mesh> from the query i get my results normally. Please help im new to meshes and I couldnt find an anwser online
