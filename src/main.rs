@@ -1,9 +1,16 @@
 // use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
-
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::{
+    core_pipeline::{
+        bloom::{BloomCompositeMode, BloomSettings},
+        tonemapping::Tonemapping,
+    },
+    prelude::*,
+    // sprite::materialmesh2dbundle,
+};
 // use bevy::sprite::MaterialMesh2dBundle;
 use bevy::utils::HashMap;
 use midir::{Ignore, MidiInput};
@@ -196,17 +203,51 @@ fn handle_note(note: i32, act_notes: &mut Vec<i32>) {
     }
 }
 fn setup(mut commands: Commands) {
+    // commands.spawn((
+    //     Camera2dBundle {
+    //         camera_2d: Camera2d {
+    //             // clear_color: ClearColorConfig::Custom(Color::BLACK),
+    //             // cle
+
+    //             // tonemapping: tonemapping::tonymcmapface, // 2. using a tonemapper that desaturates to white is recommended
+    //             ..default()
+    //         },
+    //         // BloomSettings::default(), // 3. enable bloom for the camera
+    //         ..default()
+    //     },
+    //     bevy::core_pipeline::bloom::BloomSettings::default(),
+    // ));
     commands.spawn((
         Camera2dBundle {
-            camera_2d: Camera2d {
-            // clear_color: ClearColorConfig::Custom(Color::BLACK),
-            // cle
-        },
-
+            camera: Camera {
+                hdr: true, // 1. hdr is required for bloom
+                ..default()
+            },
+            tonemapping: Tonemapping::TonyMcMapface, // 2. using a tonemapper that desaturates to white is recommended
             ..default()
         },
-        bevy::core_pipeline::bloom::BloomSettings::default(),
+        BloomSettings {
+            intensity: 0.5,
+            composite_mode: BloomCompositeMode::EnergyConserving,
+            ..Default::default()
+        },
     ));
+    // commands.spawn(
+    //     TextBundle::from_section(
+    //         "",
+    //         TextStyle {
+    //             font_size: 18.0,
+    //             color: Color::WHITE,
+    //             ..default()
+    //         },
+    //     )
+    //     .with_style(Style {
+    //         position_type: PositionType::Absolute,
+    //         bottom: Val::Px(10.0),
+    //         left: Val::Px(10.0),
+    //         ..default()
+    //     }),
+    // );
 }
 
 fn move_notes(
@@ -576,3 +617,123 @@ pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
     //     }
     // }
 }
+
+// fn update_bloom_settings(
+//     mut camera: Query<(Entity, Option<&mut BloomSettings>), With<Camera>>,
+//     // mut text: Query<&mut Text>,
+//     mut commands: Commands,
+//     keycode: Res<ButtonInput<KeyCode>>,
+//     time: Res<Time>,
+// ) {
+//     let bloom_settings = camera.single_mut();
+//     // let mut text = text.single_mut();
+//     // let text = &mut text.sections[0].value;
+
+//     // match bloom_settings {
+//     //     (entity, Some(mut bloom_settings)) => {
+//     //         // *text = "bloomsettings (toggle: space)\n".to_string();
+//     //         // text.push_str(&format!("(q/a) intensity: {}\n", bloom_settings.intensity));
+//     //         // text.push_str(&format!(
+//     //         //     "(w/s) low-frequency boost: {}\n",
+//     //         //     bloom_settings.low_frequency_boost
+//     //         // ));
+//     //         // text.push_str(&format!(
+//     //         //     "(e/d) low-frequency boost curvature: {}\n",
+//     //         //     bloom_settings.low_frequency_boost_curvature
+//     //         // ));
+//     //         // text.push_str(&format!(
+//     //         //     "(r/f) high-pass frequency: {}\n",
+//     //         //     bloom_settings.high_pass_frequency
+//     //         // ));
+//     //         // // text.push_str(&format!(
+//     //         // //     "(t/g) mode: {}\n",
+//     //         // //     match bloom_settings.composite_mode {
+//     //         // //         BloomCompositeMode::energyconserving => "energy-conserving",
+//     //         // //         BloomCompositeMode::additive => "additive",
+//     //         // //     }
+//     //         // // ));
+//     //         // text.push_str(&format!(
+//     //         //     "(y/h) threshold: {}\n",
+//     //         //     bloom_settings.prefilter_settings.threshold
+//     //         // ));
+//     //         // text.push_str(&format!(
+//     //         //     "(u/j) threshold softness: {}\n",
+//     //         //     bloom_settings.prefilter_settings.threshold_softness
+//     //         // ));
+
+//     //         if keycode.just_pressed(KeyCode::Space) {
+//     //             commands.entity(entity).remove::<BloomSettings>();
+//     //         }
+
+//     //         let dt = time.delta_seconds();
+
+//     //         if keycode.pressed(KeyCode::KeyA) {
+//     //             bloom_settings.intensity -= dt / 10.0;
+//     //         }
+//     //         if keycode.pressed(KeyCode::KeyQ) {
+//     //             bloom_settings.intensity += dt / 10.0;
+//     //         }
+//     //         bloom_settings.intensity = bloom_settings.intensity.clamp(0.0, 1.0);
+
+//     //         //     if keycode.pressed(KeyCode::keys) {
+//     //         //         bloom_settings.low_frequency_boost -= dt / 10.0;
+//     //         //     }
+//     //         //     if keycode.pressed(KeyCode::keyw) {
+//     //         //         bloom_settings.low_frequency_boost += dt / 10.0;
+//     //         //     }
+//     //         //     bloom_settings.low_frequency_boost = bloom_settings.low_frequency_boost.clamp(0.0, 1.0);
+
+//     //         //     if keycode.pressed(KeyCode::keyd) {
+//     //         //         bloom_settings.low_frequency_boost_curvature -= dt / 10.0;
+//     //         //     }
+//     //         //     if keycode.pressed(KeyCode::keye) {
+//     //         //         bloom_settings.low_frequency_boost_curvature += dt / 10.0;
+//     //         //     }
+//     //         //     bloom_settings.low_frequency_boost_curvature =
+//     //         //         bloom_settings.low_frequency_boost_curvature.clamp(0.0, 1.0);
+
+//     //         //     if keycode.pressed(KeyCode::keyf) {
+//     //         //         bloom_settings.high_pass_frequency -= dt / 10.0;
+//     //         //     }
+//     //         //     if keycode.pressed(KeyCode::keyr) {
+//     //         //         bloom_settings.high_pass_frequency += dt / 10.0;
+//     //         //     }
+//     //         //     bloom_settings.high_pass_frequency = bloom_settings.high_pass_frequency.clamp(0.0, 1.0);
+
+//     //         //     if keycode.pressed(KeyCode::keyg) {
+//     //         //         bloom_settings.composite_mode = bloomcompositemode::additive;
+//     //         //     }
+//     //         //     if keycode.pressed(KeyCode::keyt) {
+//     //         //         bloom_settings.composite_mode = bloomcompositemode::energyconserving;
+//     //         //     }
+
+//     //         //     if keycode.pressed(KeyCode::keyh) {
+//     //         //         bloom_settings.prefilter_settings.threshold -= dt;
+//     //         //     }
+//     //         //     if keycode.pressed(KeyCode::keyy) {
+//     //         //         bloom_settings.prefilter_settings.threshold += dt;
+//     //         //     }
+//     //         //     bloom_settings.prefilter_settings.threshold =
+//     //         //         bloom_settings.prefilter_settings.threshold.max(0.0);
+
+//     //         //     if keycode.pressed(KeyCode::keyj) {
+//     //         //         bloom_settings.prefilter_settings.threshold_softness -= dt / 10.0;
+//     //         //     }
+//     //         //     if keycode.pressed(KeyCode::keyu) {
+//     //         //         bloom_settings.prefilter_settings.threshold_softness += dt / 10.0;
+//     //         //     }
+//     //         bloom_settings.prefilter_settings.threshold_softness = bloom_settings
+//     //             .prefilter_settings
+//     //             .threshold_softness
+//     //             .clamp(0.0, 1.0);
+//     //     }
+
+//         // (entity, none) => {
+//         //     // *text = "bloom: off (toggle: space)".to_string();
+
+//         //     if keycode.just_pressed(KeyCode::Space) {
+//         //         commands.entity(entity).insert(BloomSettings::default());
+//         //     }
+//         // }
+//     }
+// }
