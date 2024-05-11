@@ -39,6 +39,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
+        .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(NotePlacemnt {
             notes_position: HashMap::new(),
             blacks: Vec::new(),
@@ -229,6 +230,9 @@ fn setup(mut commands: Commands) {
         BloomSettings {
             intensity: 0.5,
             composite_mode: BloomCompositeMode::EnergyConserving,
+            low_frequency_boost: 0.3,
+            high_pass_frequency: 0.7,
+            // prefilter_settings
             ..Default::default()
         },
     ));
