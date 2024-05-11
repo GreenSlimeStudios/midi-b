@@ -210,14 +210,14 @@ fn setup(mut commands: Commands) {
 }
 
 fn move_notes(
-    mut notes: Query<(&mut Transform, &Note)>,
+    mut notes: Query<&mut Transform, With<Note>>,
     time: Res<Time>,
     mut edges: Query<&mut Transform, (With<NoteEdge>, Without<Note>)>,
 ) {
-    for (mut transform, _) in &mut notes {
+    for mut transform in &mut notes {
         transform.translation.y += NOTE_SPEED * time.delta_seconds();
     }
-    for (mut transform) in &mut edges {
+    for mut transform in &mut edges {
         transform.translation.y += NOTE_SPEED * time.delta_seconds();
     }
 }
@@ -430,7 +430,7 @@ fn notes_spawner(
                     id: 0,
                 },
             ));
-            note_meshes.note_handles.push((notes[i], mesh_handle));
+            // note_meshes.note_handles.push((notes[i], mesh_handle));
         }
     }
     // transform_notes = transform_notes.into_iter().rev();
@@ -466,6 +466,61 @@ fn notes_spawner(
                 }
                 nn += 1;
             }
+        }
+    }
+    for i in 0..active_notes.active_notes.len() {
+        if !notes.contains(&active_notes.active_notes[i]) {
+            let nn_width = if notes_placement
+                .blacks
+                .contains(&(active_notes.active_notes[i] as i8))
+            {
+                res.width() / 72.0
+            } else {
+                res.width() / 52.0 - 2.
+            };
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    mesh: meshes
+                        .add(Ellipse {
+                            half_size: Vec2::new(nn_width / 2. - 2., 5.),
+                            ..default()
+                        })
+                        .into(),
+                    material: materials.add(
+                        if notes_placement
+                            .blacks
+                            .contains(&(active_notes.active_notes[i] as i8))
+                        {
+                            Color::PINK
+                        } else {
+                            Color::BLUE
+                        },
+                    ),
+                    transform: Transform::from_xyz(
+                        notes_placement
+                            .notes_position
+                            .get(&(active_notes.active_notes[i] as i8))
+                            .unwrap() as &f32
+                            * n_width
+                            // / 88.
+                            - res.width() / 2.
+                            - 12 as f32 * n_width
+                            + n_width / 2.,
+                        -res.height() / 2.,
+                        if notes_placement
+                            .blacks
+                            .contains(&(active_notes.active_notes[i] as i8))
+                        {
+                            0.5
+                        } else {
+                            -0.5
+                        },
+                    ),
+
+                    ..default()
+                },
+                NoteEdge {},
+            ));
         }
     }
     active_notes.active_notes = notes.clone();
