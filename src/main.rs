@@ -1,6 +1,7 @@
 // use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
 
+use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 // use bevy::sprite::MaterialMesh2dBundle;
@@ -195,17 +196,28 @@ fn handle_note(note: i32, act_notes: &mut Vec<i32>) {
     }
 }
 fn setup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        camera_2d: Camera2d {
+    commands.spawn((
+        Camera2dBundle {
+            camera_2d: Camera2d {
             // clear_color: ClearColorConfig::Custom(Color::BLACK),
             // cle
         },
-        ..default()
-    });
+
+            ..default()
+        },
+        bevy::core_pipeline::bloom::BloomSettings::default(),
+    ));
 }
 
-fn move_notes(mut notes: Query<(&mut Transform, &Note)>, time: Res<Time>) {
+fn move_notes(
+    mut notes: Query<(&mut Transform, &Note)>,
+    time: Res<Time>,
+    mut edges: Query<&mut Transform, (With<NoteEdge>, Without<Note>)>,
+) {
     for (mut transform, _) in &mut notes {
+        transform.translation.y += NOTE_SPEED * time.delta_seconds();
+    }
+    for (mut transform) in &mut edges {
         transform.translation.y += NOTE_SPEED * time.delta_seconds();
     }
 }
@@ -332,7 +344,43 @@ fn notes_spawner(
             // info!("{}", mesh.is_strong());
             // info!("{:?}", mesh);
             // info!("{:?}", meshes.ids().collect::<Vec<_>>());
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    mesh: meshes
+                        .add(Ellipse {
+                            half_size: Vec2::new(nn_width / 2. - 2., 5.),
+                            ..default()
+                        })
+                        .into(),
+                    material: materials.add(
+                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                            Color::RED
+                        } else {
+                            Color::GREEN
+                        },
+                    ),
+                    transform: Transform::from_xyz(
+                        notes_placement
+                            .notes_position
+                            .get(&(notes[i] as i8))
+                            .unwrap() as &f32
+                            * n_width
+                            // / 88.
+                            - res.width() / 2.
+                            - 12 as f32 * n_width
+                            + n_width / 2.,
+                        -res.height() / 2.,
+                        if notes_placement.blacks.contains(&(notes[i] as i8)) {
+                            0.5
+                        } else {
+                            -0.5
+                        },
+                    ),
 
+                    ..default()
+                },
+                NoteEdge {},
+            ));
             commands.spawn((
                 MaterialMesh2dBundle {
                     // mesh: meshes.add(Capsule2d::new(nn_width / 2., 15.)).into(),
@@ -429,6 +477,10 @@ pub struct Note {
     pub y: f32,
     pub note_id: i32,
     pub id: i32,
+}
+#[derive(Component, Debug)]
+pub struct NoteEdge {
+    // pub x: f32,
 }
 #[derive(Resource)]
 pub struct ActiveNotes {
