@@ -3,23 +3,20 @@ extern crate midir;
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::utils::HashMap;
 use bevy::{
     core_pipeline::{
         bloom::{BloomCompositeMode, BloomSettings},
         tonemapping::Tonemapping,
     },
     prelude::*,
-    // sprite::materialmesh2dbundle,
 };
-// use bevy::sprite::MaterialMesh2dBundle;
-use bevy::utils::HashMap;
 use midir::{Ignore, MidiInput};
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-// use midir::{Ignore, MidiInput};
 use std::fs;
 use std::fs::File;
 
@@ -236,22 +233,6 @@ fn setup(mut commands: Commands) {
             ..Default::default()
         },
     ));
-    // commands.spawn(
-    //     TextBundle::from_section(
-    //         "",
-    //         TextStyle {
-    //             font_size: 18.0,
-    //             color: Color::WHITE,
-    //             ..default()
-    //         },
-    //     )
-    //     .with_style(Style {
-    //         position_type: PositionType::Absolute,
-    //         bottom: Val::Px(10.0),
-    //         left: Val::Px(10.0),
-    //         ..default()
-    //     }),
-    // );
 }
 
 fn move_notes(
@@ -438,17 +419,6 @@ fn notes_spawner(
                     //         Color::WHITE
                     //     },
                     // ),
-
-                    // mesh: bevy::sprite::meshes.add(Rectangle::default()).into(),
-                    // sprite: Sprite {
-                    //     custom_size: Some(Vec2::new(nn_width, 1.0)),
-                    //     color: if notes_placement.blacks.contains(&(notes[i] as i8)) {
-                    //         Color::RED
-                    //     } else {
-                    //         Color::WHITE
-                    //     },
-                    //     ..default()
-                    // },
                     transform: Transform::from_xyz(
                         notes_placement
                             .notes_position
@@ -493,13 +463,6 @@ fn notes_spawner(
             nn = 0;
             for (mut transform, _) in &mut transform_notes.iter_mut() {
                 if nn == n {
-                    // let mut mesh = meshes.get_mut(sprite_handle).unwrap();
-                    // let mut mesh = meshes.get_mut(sprite_handle).unwrap();
-
-                    // sprite.half_size = Some(Vec2 {
-                    //     x: sprite.half_size.unwrap().x,
-                    //     y: sprite.half_size.unwrap().y + time.delta_seconds() * NOTE_SPEED,
-                    // });
                     transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
                     // transform.scale = Vec3::new(10., 1., 1.);transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
                     transform.scale = Vec3::new(
@@ -615,129 +578,4 @@ pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
         }
     }
     notes_placement.blacks = blacks;
-    // for i in 0..10 {
-    //     for j in 0..12 {
-    //         // if j.
-    //     }
-    // }
 }
-
-// fn update_bloom_settings(
-//     mut camera: Query<(Entity, Option<&mut BloomSettings>), With<Camera>>,
-//     // mut text: Query<&mut Text>,
-//     mut commands: Commands,
-//     keycode: Res<ButtonInput<KeyCode>>,
-//     time: Res<Time>,
-// ) {
-//     let bloom_settings = camera.single_mut();
-//     // let mut text = text.single_mut();
-//     // let text = &mut text.sections[0].value;
-
-//     // match bloom_settings {
-//     //     (entity, Some(mut bloom_settings)) => {
-//     //         // *text = "bloomsettings (toggle: space)\n".to_string();
-//     //         // text.push_str(&format!("(q/a) intensity: {}\n", bloom_settings.intensity));
-//     //         // text.push_str(&format!(
-//     //         //     "(w/s) low-frequency boost: {}\n",
-//     //         //     bloom_settings.low_frequency_boost
-//     //         // ));
-//     //         // text.push_str(&format!(
-//     //         //     "(e/d) low-frequency boost curvature: {}\n",
-//     //         //     bloom_settings.low_frequency_boost_curvature
-//     //         // ));
-//     //         // text.push_str(&format!(
-//     //         //     "(r/f) high-pass frequency: {}\n",
-//     //         //     bloom_settings.high_pass_frequency
-//     //         // ));
-//     //         // // text.push_str(&format!(
-//     //         // //     "(t/g) mode: {}\n",
-//     //         // //     match bloom_settings.composite_mode {
-//     //         // //         BloomCompositeMode::energyconserving => "energy-conserving",
-//     //         // //         BloomCompositeMode::additive => "additive",
-//     //         // //     }
-//     //         // // ));
-//     //         // text.push_str(&format!(
-//     //         //     "(y/h) threshold: {}\n",
-//     //         //     bloom_settings.prefilter_settings.threshold
-//     //         // ));
-//     //         // text.push_str(&format!(
-//     //         //     "(u/j) threshold softness: {}\n",
-//     //         //     bloom_settings.prefilter_settings.threshold_softness
-//     //         // ));
-
-//     //         if keycode.just_pressed(KeyCode::Space) {
-//     //             commands.entity(entity).remove::<BloomSettings>();
-//     //         }
-
-//     //         let dt = time.delta_seconds();
-
-//     //         if keycode.pressed(KeyCode::KeyA) {
-//     //             bloom_settings.intensity -= dt / 10.0;
-//     //         }
-//     //         if keycode.pressed(KeyCode::KeyQ) {
-//     //             bloom_settings.intensity += dt / 10.0;
-//     //         }
-//     //         bloom_settings.intensity = bloom_settings.intensity.clamp(0.0, 1.0);
-
-//     //         //     if keycode.pressed(KeyCode::keys) {
-//     //         //         bloom_settings.low_frequency_boost -= dt / 10.0;
-//     //         //     }
-//     //         //     if keycode.pressed(KeyCode::keyw) {
-//     //         //         bloom_settings.low_frequency_boost += dt / 10.0;
-//     //         //     }
-//     //         //     bloom_settings.low_frequency_boost = bloom_settings.low_frequency_boost.clamp(0.0, 1.0);
-
-//     //         //     if keycode.pressed(KeyCode::keyd) {
-//     //         //         bloom_settings.low_frequency_boost_curvature -= dt / 10.0;
-//     //         //     }
-//     //         //     if keycode.pressed(KeyCode::keye) {
-//     //         //         bloom_settings.low_frequency_boost_curvature += dt / 10.0;
-//     //         //     }
-//     //         //     bloom_settings.low_frequency_boost_curvature =
-//     //         //         bloom_settings.low_frequency_boost_curvature.clamp(0.0, 1.0);
-
-//     //         //     if keycode.pressed(KeyCode::keyf) {
-//     //         //         bloom_settings.high_pass_frequency -= dt / 10.0;
-//     //         //     }
-//     //         //     if keycode.pressed(KeyCode::keyr) {
-//     //         //         bloom_settings.high_pass_frequency += dt / 10.0;
-//     //         //     }
-//     //         //     bloom_settings.high_pass_frequency = bloom_settings.high_pass_frequency.clamp(0.0, 1.0);
-
-//     //         //     if keycode.pressed(KeyCode::keyg) {
-//     //         //         bloom_settings.composite_mode = bloomcompositemode::additive;
-//     //         //     }
-//     //         //     if keycode.pressed(KeyCode::keyt) {
-//     //         //         bloom_settings.composite_mode = bloomcompositemode::energyconserving;
-//     //         //     }
-
-//     //         //     if keycode.pressed(KeyCode::keyh) {
-//     //         //         bloom_settings.prefilter_settings.threshold -= dt;
-//     //         //     }
-//     //         //     if keycode.pressed(KeyCode::keyy) {
-//     //         //         bloom_settings.prefilter_settings.threshold += dt;
-//     //         //     }
-//     //         //     bloom_settings.prefilter_settings.threshold =
-//     //         //         bloom_settings.prefilter_settings.threshold.max(0.0);
-
-//     //         //     if keycode.pressed(KeyCode::keyj) {
-//     //         //         bloom_settings.prefilter_settings.threshold_softness -= dt / 10.0;
-//     //         //     }
-//     //         //     if keycode.pressed(KeyCode::keyu) {
-//     //         //         bloom_settings.prefilter_settings.threshold_softness += dt / 10.0;
-//     //         //     }
-//     //         bloom_settings.prefilter_settings.threshold_softness = bloom_settings
-//     //             .prefilter_settings
-//     //             .threshold_softness
-//     //             .clamp(0.0, 1.0);
-//     //     }
-
-//         // (entity, none) => {
-//         //     // *text = "bloom: off (toggle: space)".to_string();
-
-//         //     if keycode.just_pressed(KeyCode::Space) {
-//         //         commands.entity(entity).insert(BloomSettings::default());
-//         //     }
-//         // }
-//     }
-// }
