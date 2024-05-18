@@ -24,6 +24,10 @@ use std::time;
 
 const NOTE_SPEED: f32 = 200.;
 const NOTE_WIDTH: f32 = 15.;
+const BLACK_COLOR_TOP: Color = Color::RED;
+const BLACK_COLOR_BOTTOM: Color = Color::PINK;
+const WHITE_COLOR_TOP: Color = Color::GREEN;
+const WHITE_COLOR_BOTTOM: Color = Color::BLUE;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -337,16 +341,16 @@ fn notes_spawner(
                 ..default()
             };
             let vertex_colors: Vec<[f32; 4]> = vec![
-                Color::GREEN.as_rgba_f32(),
-                Color::GREEN.as_rgba_f32(),
-                Color::BLUE.as_rgba_f32(),
-                Color::BLUE.as_rgba_f32(),
+                WHITE_COLOR_TOP.as_rgba_f32(),
+                WHITE_COLOR_TOP.as_rgba_f32(),
+                WHITE_COLOR_BOTTOM.as_rgba_f32(),
+                WHITE_COLOR_BOTTOM.as_rgba_f32(),
             ];
             let vertex_colors_blacks: Vec<[f32; 4]> = vec![
-                Color::RED.as_rgba_f32(),
-                Color::RED.as_rgba_f32(),
-                Color::PINK.as_rgba_f32(),
-                Color::PINK.as_rgba_f32(),
+                BLACK_COLOR_TOP.as_rgba_f32(),
+                BLACK_COLOR_TOP.as_rgba_f32(),
+                BLACK_COLOR_BOTTOM.as_rgba_f32(),
+                BLACK_COLOR_BOTTOM.as_rgba_f32(),
             ];
 
             // mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vertex_colors.clone()); // mesh.insert_attribute(Mesh::)
@@ -380,9 +384,9 @@ fn notes_spawner(
                         .into(),
                     material: materials.add(
                         if notes_placement.blacks.contains(&(notes[i] as i8)) {
-                            Color::RED
+                            BLACK_COLOR_TOP
                         } else {
-                            Color::GREEN
+                            WHITE_COLOR_TOP
                         },
                     ),
                     transform: Transform::from_xyz(
@@ -499,9 +503,9 @@ fn notes_spawner(
                             .blacks
                             .contains(&(active_notes.active_notes[i] as i8))
                         {
-                            Color::PINK
+                            BLACK_COLOR_BOTTOM
                         } else {
-                            Color::BLUE
+                            WHITE_COLOR_BOTTOM
                         },
                     ),
                     transform: Transform::from_xyz(
