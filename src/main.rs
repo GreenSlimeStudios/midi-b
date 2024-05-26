@@ -22,12 +22,12 @@ use std::fs::File;
 
 use std::time;
 
-const NOTE_SPEED: f32 = 200.;
+const NOTE_SPEED: f32 = 150.;
 const NOTE_WIDTH: f32 = 15.;
-const BLACK_COLOR_TOP: Color = Color::RED;
-const BLACK_COLOR_BOTTOM: Color = Color::PINK;
-const WHITE_COLOR_TOP: Color = Color::GREEN;
-const WHITE_COLOR_BOTTOM: Color = Color::BLUE;
+const BLACK_COLOR_TOP: Color = Color::DARK_GRAY;
+const BLACK_COLOR_BOTTOM: Color = Color::DARK_GRAY;
+const WHITE_COLOR_TOP: Color = Color::WHITE;
+const WHITE_COLOR_BOTTOM: Color = Color::WHITE;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -230,6 +230,7 @@ fn setup(mut commands: Commands) {
         },
         BloomSettings {
             intensity: 0.5,
+            // composite_mode: BloomCompositeMode::Additive,
             composite_mode: BloomCompositeMode::EnergyConserving,
             low_frequency_boost: 0.3,
             high_pass_frequency: 0.7,
@@ -378,7 +379,7 @@ fn notes_spawner(
                 MaterialMesh2dBundle {
                     mesh: meshes
                         .add(Ellipse {
-                            half_size: Vec2::new(nn_width / 2. - 2., 5.),
+                            half_size: Vec2::new(nn_width / 2. - 2., nn_width / 4.),
                             ..default()
                         })
                         .into(),
@@ -494,7 +495,8 @@ fn notes_spawner(
                 MaterialMesh2dBundle {
                     mesh: meshes
                         .add(Ellipse {
-                            half_size: Vec2::new(nn_width / 2. - 2., 5.),
+                            // half_size: Vec2::new(nn_width / 2. - 2., 5.),
+                            half_size: Vec2::new(nn_width / 2. - 2., nn_width / 4.),
                             ..default()
                         })
                         .into(),
