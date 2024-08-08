@@ -12,14 +12,14 @@ use bevy::{
     },
     prelude::*,
 };
+use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use midir::{Ignore, MidiInput};
 use std::error::Error;
+use std::fs;
+use std::fs::File;
 use std::io::{stdin, stdout, Write};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
-
-use std::fs;
-use std::fs::File;
 
 use std::time;
 
@@ -40,9 +40,12 @@ fn main() {
     // println!("Hello, world!");
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(EguiPlugin)
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(Configuration {
+            sync_white_notes: true,
+            sync_black_notes: true,
             note_speed: NOTE_SPEED,
             note_width: NOTE_WIDTH,
             black_color_top: BLACK_COLOR_TOP,
@@ -57,6 +60,7 @@ fn main() {
         .insert_resource(NoteMeshes {
             note_handles: Vec::new(),
         })
+        .add_systems(Update, ui_config_system)
         .add_systems(Startup, note_placement)
         .insert_resource(ActiveNotes {
             active_notes: Vec::new(),
@@ -574,6 +578,8 @@ pub struct Configuration {
     pub black_color_bottom: Srgba,
     pub white_color_top: Srgba,
     pub white_color_bottom: Srgba,
+    pub sync_white_notes: bool,
+    pub sync_black_notes: bool,
 }
 #[derive(Resource)]
 pub struct NoteMeshes {
@@ -604,4 +610,79 @@ pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
         }
     }
     notes_placement.blacks = blacks;
+}
+fn ui_config_system(mut contexts: EguiContexts, mut config: ResMut<Configuration>) {
+    let white_top = config.white_color_top.to_f32_array();
+    let white_bottom = config.white_color_bottom.to_f32_array();
+    let black_top = config.black_color_top.to_f32_array();
+    let black_bottom = config.black_color_bottom.to_f32_array();
+    let mut w_t = egui::Color32::from_rgba_premultiplied(
+        (white_top[0] * 256.) as u8,
+        (white_top[1] * 256.) as u8,
+        (white_top[2] * 256.) as u8,
+        (white_top[3] * 256.) as u8,
+    );
+    let mut w_b = egui::Color32::from_rgba_premultiplied(
+        (white_bottom[0] * 256.) as u8,
+        (white_bottom[1] * 256.) as u8,
+        (white_bottom[2] * 256.) as u8,
+        (white_bottom[3] * 256.) as u8,
+    );
+    let mut b_t = egui::Color32::from_rgba_premultiplied(
+        (black_top[0] * 256.) as u8,
+        (black_top[1] * 256.) as u8,
+        (black_top[2] * 256.) as u8,
+        (black_top[3] * 256.) as u8,
+    );
+    let mut b_b = egui::Color32::from_rgba_premultiplied(
+        (black_bottom[0] * 256.) as u8,
+        (black_bottom[1] * 256.) as u8,
+        (black_bottom[2] * 256.) as u8,
+        (black_bottom[3] * 256.) as u8,
+    );
+    egui::Window::new("Config").show(contexts.ctx_mut(), |ui| {
+        ui.label("baka");
+        ui.label("white top color");
+        ui.color_edit_button_srgba(&mut w_t);
+        ui.label("white bottom color");
+        ui.color_edit_button_srgba(&mut w_b);
+        ui.checkbox(&mut config.sync_white_notes, "sync white notes");
+
+        ui.label("black top color");
+        ui.color_edit_button_srgba(&mut b_t);
+        ui.label("black bottom color");
+        ui.color_edit_button_srgba(&mut b_b);
+        ui.checkbox(&mut config.sync_black_notes, "sync black notes");
+        ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
+    });
+    if config.sync_white_notes {
+        w_b = w_t;
+    }
+    if config.sync_black_notes {
+        b_b = b_t;
+    }
+    config.white_color_top = Srgba {
+        red: w_t.to_array()[0] as f32 / 256.,
+        green: w_t.to_array()[1] as f32 / 256.,
+        blue: w_t.to_array()[2] as f32 / 256.,
+        alpha: w_t.to_array()[3] as f32 / 256.,
+    };
+    config.white_color_bottom = Srgba {
+        red: w_b.to_array()[0] as f32 / 256.,
+        green: w_b.to_array()[1] as f32 / 256.,
+        blue: w_b.to_array()[2] as f32 / 256.,
+        alpha: w_b.to_array()[3] as f32 / 256.,
+    };
+    config.black_color_top = Srgba {
+        red: b_t.to_array()[0] as f32 / 256.,
+        green: b_t.to_array()[1] as f32 / 256.,
+        blue: b_t.to_array()[2] as f32 / 256.,
+        alpha: b_t.to_array()[3] as f32 / 256.,
+    };
+    config.black_color_bottom = Srgba {
+        red: b_b.to_array()[0] as f32 / 256.,
+        green: b_b.to_array()[1] as f32 / 256.,
+        blue: b_b.to_array()[2] as f32 / 256.,
+        alpha: b_b.to_array()[3] as f32 / 256.,
+    };
 }
