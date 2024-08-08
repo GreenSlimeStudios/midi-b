@@ -1,5 +1,6 @@
 // use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
+use bevy::color::palettes::css::*;
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
@@ -24,8 +25,8 @@ use std::time;
 
 const NOTE_SPEED: f32 = 150.;
 const NOTE_WIDTH: f32 = 15.;
-const BLACK_COLOR_TOP: Color = Color::DARK_GRAY;
-const BLACK_COLOR_BOTTOM: Color = Color::DARK_GRAY;
+const BLACK_COLOR_TOP: Color = Color::WHITE;
+const BLACK_COLOR_BOTTOM: Color = Color::WHITE;
 const WHITE_COLOR_TOP: Color = Color::WHITE;
 const WHITE_COLOR_BOTTOM: Color = Color::WHITE;
 
@@ -41,6 +42,14 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(Color::BLACK))
+        .insert_resource(Configuration {
+            note_speed: NOTE_SPEED,
+            note_width: NOTE_WIDTH,
+            black_color_top: BLACK_COLOR_TOP,
+            black_color_bottom: BLACK_COLOR_BOTTOM,
+            white_color_top: WHITE_COLOR_TOP,
+            white_color_bottom: WHITE_COLOR_BOTTOM,
+        })
         .insert_resource(NotePlacemnt {
             notes_position: HashMap::new(),
             blacks: Vec::new(),
@@ -244,12 +253,13 @@ fn move_notes(
     mut notes: Query<&mut Transform, With<Note>>,
     time: Res<Time>,
     mut edges: Query<&mut Transform, (With<NoteEdge>, Without<Note>)>,
+    config: Res<Configuration>,
 ) {
     for mut transform in &mut notes {
-        transform.translation.y += NOTE_SPEED * time.delta_seconds();
+        transform.translation.y += config.note_speed * time.delta_seconds();
     }
     for mut transform in &mut edges {
-        transform.translation.y += NOTE_SPEED * time.delta_seconds();
+        transform.translation.y += config.note_speed * time.delta_seconds();
     }
 }
 fn grow_notes(
@@ -283,10 +293,10 @@ fn grow_notes(
     //     // no logs :(
     //     if active_notes.active_notes.contains(&(note.note_id)) {
     //         // transform.scale()
-    //         transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
+    //         transform.translation.y -= time.delta_seconds() * config.note_speed / 2.;
     //         transform.scale = Vec3::new(
     //             1.,
-    //             (time.delta_seconds() * NOTE_SPEED) / 20. + transform.scale.y,
+    //             (time.delta_seconds() * config.note_speed) / 20. + transform.scale.y,
     //             1.,
     //         );
     //         info!("yes");
@@ -304,6 +314,7 @@ fn notes_spawner(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut note_meshes: ResMut<NoteMeshes>,
+    config: Res<Configuration>,
 ) {
     let contents = fs::read_to_string("info.txt").expect("Something went wrong reading the file");
     let mut notes_string: Vec<&str> = contents.split("\n").collect();
@@ -341,17 +352,26 @@ fn notes_spawner(
                 half_size: Vec2::new(nn_width / 2. - 2., 1.),
                 ..default()
             };
+            // to fix
             let vertex_colors: Vec<[f32; 4]> = vec![
-                WHITE_COLOR_TOP.as_rgba_f32(),
-                WHITE_COLOR_TOP.as_rgba_f32(),
-                WHITE_COLOR_BOTTOM.as_rgba_f32(),
-                WHITE_COLOR_BOTTOM.as_rgba_f32(),
+                [200., 10., 10., 1.],
+                [200., 10., 10., 1.],
+                [10., 10., 10., 1.],
+                [10., 10., 10., 1.],
+                //config.white_color_top.as_rgba_f32(),
+                //config.white_color_top.as_rgba_f32(),
+                //config.white_color_bottom.as_rgba_f32(),
+                //config.white_color_bottom.as_rgba_f32(),
             ];
             let vertex_colors_blacks: Vec<[f32; 4]> = vec![
-                BLACK_COLOR_TOP.as_rgba_f32(),
-                BLACK_COLOR_TOP.as_rgba_f32(),
-                BLACK_COLOR_BOTTOM.as_rgba_f32(),
-                BLACK_COLOR_BOTTOM.as_rgba_f32(),
+                [10., 10., 10., 1.],
+                [10., 10., 10., 1.],
+                [10., 10., 10., 1.],
+                [10., 10., 10., 1.],
+                //config.black_color_top.as_rgba_f32(),
+                //config.black_color_top.as_rgba_f32(),
+                //config.black_color_bottom.as_rgba_f32(),
+                //config.black_color_bottom.as_rgba_f32(),
             ];
 
             // mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vertex_colors.clone()); // mesh.insert_attribute(Mesh::)
@@ -359,7 +379,7 @@ fn notes_spawner(
             let mesh_handle: Handle<Mesh> = meshes.add(mesh);
 
             meshes
-                .get_mut(mesh_handle.clone())
+                .get_mut(&mesh_handle.clone())
                 .unwrap()
                 .insert_attribute(
                     Mesh::ATTRIBUTE_COLOR,
@@ -385,9 +405,9 @@ fn notes_spawner(
                         .into(),
                     material: materials.add(
                         if notes_placement.blacks.contains(&(notes[i] as i8)) {
-                            BLACK_COLOR_TOP
+                            config.black_color_top
                         } else {
-                            WHITE_COLOR_TOP
+                            config.white_color_top
                         },
                     ),
                     transform: Transform::from_xyz(
@@ -468,11 +488,11 @@ fn notes_spawner(
             nn = 0;
             for (mut transform, _) in &mut transform_notes.iter_mut() {
                 if nn == n {
-                    transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
-                    // transform.scale = Vec3::new(10., 1., 1.);transform.translation.y -= time.delta_seconds() * NOTE_SPEED / 2.;
+                    transform.translation.y -= time.delta_seconds() * config.note_speed / 2.;
+                    // transform.scale = Vec3::new(10., 1., 1.);transform.translation.y -= time.delta_seconds() * config.note_speed / 2.;
                     transform.scale = Vec3::new(
                         1.,
-                        (time.delta_seconds() * NOTE_SPEED) / 2. + transform.scale.y,
+                        (time.delta_seconds() * config.note_speed) / 2. + transform.scale.y,
                         1.,
                     );
                     break;
@@ -505,9 +525,9 @@ fn notes_spawner(
                             .blacks
                             .contains(&(active_notes.active_notes[i] as i8))
                         {
-                            BLACK_COLOR_BOTTOM
+                            config.black_color_bottom
                         } else {
-                            WHITE_COLOR_BOTTOM
+                            config.white_color_bottom
                         },
                     ),
                     transform: Transform::from_xyz(
@@ -554,6 +574,15 @@ pub struct NoteEdge {
 #[derive(Resource)]
 pub struct ActiveNotes {
     active_notes: Vec<i32>,
+}
+#[derive(Resource)]
+pub struct Configuration {
+    pub note_speed: f32,
+    pub note_width: f32,
+    pub black_color_top: Color,
+    pub black_color_bottom: Color,
+    pub white_color_top: Color,
+    pub white_color_bottom: Color,
 }
 #[derive(Resource)]
 pub struct NoteMeshes {
