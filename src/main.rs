@@ -25,10 +25,10 @@ use std::time;
 
 const NOTE_SPEED: f32 = 150.;
 const NOTE_WIDTH: f32 = 15.;
-const BLACK_COLOR_TOP: Color = Color::WHITE;
-const BLACK_COLOR_BOTTOM: Color = Color::WHITE;
-const WHITE_COLOR_TOP: Color = Color::WHITE;
-const WHITE_COLOR_BOTTOM: Color = Color::WHITE;
+const BLACK_COLOR_TOP: Srgba = DARK_GRAY;
+const BLACK_COLOR_BOTTOM: Srgba = DARK_GRAY;
+const WHITE_COLOR_TOP: Srgba = WHITE;
+const WHITE_COLOR_BOTTOM: Srgba = WHITE;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -352,26 +352,17 @@ fn notes_spawner(
                 half_size: Vec2::new(nn_width / 2. - 2., 1.),
                 ..default()
             };
-            // to fix
             let vertex_colors: Vec<[f32; 4]> = vec![
-                [200., 10., 10., 1.],
-                [200., 10., 10., 1.],
-                [10., 10., 10., 1.],
-                [10., 10., 10., 1.],
-                //config.white_color_top.as_rgba_f32(),
-                //config.white_color_top.as_rgba_f32(),
-                //config.white_color_bottom.as_rgba_f32(),
-                //config.white_color_bottom.as_rgba_f32(),
+                LinearRgba::from(config.white_color_top).to_f32_array(),
+                LinearRgba::from(config.white_color_top).to_f32_array(),
+                LinearRgba::from(config.white_color_bottom).to_f32_array(),
+                LinearRgba::from(config.white_color_bottom).to_f32_array(),
             ];
             let vertex_colors_blacks: Vec<[f32; 4]> = vec![
-                [10., 10., 10., 1.],
-                [10., 10., 10., 1.],
-                [10., 10., 10., 1.],
-                [10., 10., 10., 1.],
-                //config.black_color_top.as_rgba_f32(),
-                //config.black_color_top.as_rgba_f32(),
-                //config.black_color_bottom.as_rgba_f32(),
-                //config.black_color_bottom.as_rgba_f32(),
+                LinearRgba::from(config.black_color_top).to_f32_array(),
+                LinearRgba::from(config.black_color_top).to_f32_array(),
+                LinearRgba::from(config.black_color_bottom).to_f32_array(),
+                LinearRgba::from(config.black_color_bottom).to_f32_array(),
             ];
 
             // mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vertex_colors.clone()); // mesh.insert_attribute(Mesh::)
@@ -405,9 +396,9 @@ fn notes_spawner(
                         .into(),
                     material: materials.add(
                         if notes_placement.blacks.contains(&(notes[i] as i8)) {
-                            config.black_color_top
+                            Color::from(config.black_color_top)
                         } else {
-                            config.white_color_top
+                            Color::from(config.white_color_top)
                         },
                     ),
                     transform: Transform::from_xyz(
@@ -525,9 +516,9 @@ fn notes_spawner(
                             .blacks
                             .contains(&(active_notes.active_notes[i] as i8))
                         {
-                            config.black_color_bottom
+                            Color::from(config.black_color_bottom)
                         } else {
-                            config.white_color_bottom
+                            Color::from(config.white_color_bottom)
                         },
                     ),
                     transform: Transform::from_xyz(
@@ -579,10 +570,10 @@ pub struct ActiveNotes {
 pub struct Configuration {
     pub note_speed: f32,
     pub note_width: f32,
-    pub black_color_top: Color,
-    pub black_color_bottom: Color,
-    pub white_color_top: Color,
-    pub white_color_bottom: Color,
+    pub black_color_top: Srgba,
+    pub black_color_bottom: Srgba,
+    pub white_color_top: Srgba,
+    pub white_color_bottom: Srgba,
 }
 #[derive(Resource)]
 pub struct NoteMeshes {
