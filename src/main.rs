@@ -44,6 +44,9 @@ fn main() {
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(Configuration {
+            enagle_bloom: true,
+            bloom_composite_mode: BloomCompositeMode::EnergyConserving,
+            bloom_intensity: 0.5,
             sync_white_notes: true,
             sync_black_notes: true,
             note_speed: NOTE_SPEED,
@@ -572,6 +575,9 @@ pub struct ActiveNotes {
 }
 #[derive(Resource)]
 pub struct Configuration {
+    pub enagle_bloom: bool,
+    pub bloom_intensity: f32,
+    pub bloom_composite_mode: BloomCompositeMode,
     pub note_speed: f32,
     pub note_width: f32,
     pub black_color_top: Srgba,
@@ -611,7 +617,11 @@ pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
     }
     notes_placement.blacks = blacks;
 }
-fn ui_config_system(mut contexts: EguiContexts, mut config: ResMut<Configuration>) {
+fn ui_config_system(
+    mut contexts: EguiContexts,
+    mut config: ResMut<Configuration>,
+    mut bloom_settings: Query<&mut BloomSettings>,
+) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
     let black_top = config.black_color_top.to_f32_array();
@@ -654,7 +664,12 @@ fn ui_config_system(mut contexts: EguiContexts, mut config: ResMut<Configuration
         ui.color_edit_button_srgba(&mut b_b);
         ui.checkbox(&mut config.sync_black_notes, "sync black notes");
         ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
+        ui.add(egui::Slider::new(&mut config.bloom_intensity, 0.0..=1.0).text("bloom intensity"));
     });
+    for mut bs in &mut bloom_settings {
+        bs.intensity = config.bloom_intensity;
+        bs.composite_mode = config.bloom_composite_mode;
+    }
     if config.sync_white_notes {
         w_b = w_t;
     }
