@@ -44,7 +44,7 @@ fn main() {
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(Configuration {
-            enagle_bloom: true,
+            enable_bloom: false,
             bloom_composite_mode: BloomCompositeMode::EnergyConserving,
             bloom_intensity: 0.5,
             sync_white_notes: true,
@@ -575,7 +575,7 @@ pub struct ActiveNotes {
 }
 #[derive(Resource)]
 pub struct Configuration {
-    pub enagle_bloom: bool,
+    pub enable_bloom: bool,
     pub bloom_intensity: f32,
     pub bloom_composite_mode: BloomCompositeMode,
     pub note_speed: f32,
@@ -664,11 +664,28 @@ fn ui_config_system(
         ui.color_edit_button_srgba(&mut b_b);
         ui.checkbox(&mut config.sync_black_notes, "sync black notes");
         ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
-        ui.add(egui::Slider::new(&mut config.bloom_intensity, 0.0..=1.0).text("bloom intensity"));
+        ui.checkbox(&mut config.enable_bloom, "enable bloom");
+        if config.enable_bloom {
+            ui.add(
+                egui::Slider::new(&mut config.bloom_intensity, 0.0..=1.0).text("bloom intensity"),
+            );
+            let additive_button = ui.button("additive");
+            if additive_button.clicked() {
+                config.bloom_composite_mode = BloomCompositeMode::Additive;
+            }
+            let efficent_button = ui.button("efficent");
+            if efficent_button.clicked() {
+                config.bloom_composite_mode = BloomCompositeMode::EnergyConserving;
+            }
+        }
     });
     for mut bs in &mut bloom_settings {
-        bs.intensity = config.bloom_intensity;
-        bs.composite_mode = config.bloom_composite_mode;
+        if config.enable_bloom {
+            bs.intensity = config.bloom_intensity;
+            bs.composite_mode = config.bloom_composite_mode;
+        } else {
+            bs.intensity = 0.;
+        }
     }
     if config.sync_white_notes {
         w_b = w_t;
