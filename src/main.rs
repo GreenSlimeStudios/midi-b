@@ -71,8 +71,8 @@ fn main() {
         .insert_resource(ActiveNotes {
             active_notes: Vec::new(),
         })
-        .add_systems(Startup, draw_keyboard)
-        .add_systems(Update, move_keyboard)
+        //.add_systems(Startup, draw_keyboard)
+        // .add_systems(Update, move_keyboard)
         .add_systems(Update, move_notes)
         .add_systems(Update, notes_spawner)
         .add_systems(Update, grow_notes)
@@ -168,10 +168,11 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
                         // this checks if the midi input is a note
                         handle_note(message[1].into(), &mut active_notes);
                         write_notes_to_file(&active_notes);
+                        //println!("{:?}", active_notes);
                     }
                 } else {
                     display_board(&active_notes);
-                    // println!("{:?}",active_notes);
+                    //println!("{:?}", active_notes);
                 }
             }
         },
@@ -578,7 +579,7 @@ pub struct NoteEdge {
 pub struct ActiveNotes {
     active_notes: Vec<i32>,
 }
-#[derive(Resource)]
+#[derive(Resource, Clone, Copy)]
 pub struct Configuration {
     pub keyboard_height: f32,
     pub show_keyboard: bool,
@@ -598,7 +599,7 @@ pub struct Configuration {
 pub struct NoteMeshes {
     pub note_handles: Vec<(i32, Handle<Mesh>)>,
 }
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct NotePlacemnt {
     pub notes_position: HashMap<i8, f32>,
     pub blacks: Vec<i8>,
@@ -623,6 +624,8 @@ pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
             }
         }
     }
+    println!("{:?}  {:?}", blacks, notes_placement);
+
     notes_placement.blacks = blacks;
 
     let mut blacks2 = Vec::new();
@@ -640,6 +643,13 @@ fn ui_config_system(
     mut contexts: EguiContexts,
     mut config: ResMut<Configuration>,
     mut bloom_settings: Query<&mut BloomSettings>,
+    //mut keys: Query<(&mut Transform, &KeyNote)>,
+    window: Query<&Window>,
+    notes_placement: Res<NotePlacemnt>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    old_keys: Query<Entity, With<KeyNote>>,
+    mut commands: Commands,
 ) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
@@ -683,6 +693,9 @@ fn ui_config_system(
         ui.color_edit_button_srgba(&mut b_b);
         ui.checkbox(&mut config.sync_black_notes, "sync black notes");
         ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
+        ui.add(
+            egui::Slider::new(&mut config.keyboard_height, 100.0..=300.0).text("keyboard height"),
+        );
         ui.checkbox(&mut config.enable_bloom, "enable bloom");
         if config.enable_bloom {
             ui.add(
@@ -696,6 +709,17 @@ fn ui_config_system(
             if efficent_button.clicked() {
                 config.bloom_composite_mode = BloomCompositeMode::EnergyConserving;
             }
+        }
+        if ui.add(egui::Button::new("Generate Keyboard")).clicked() {
+            draw_keyboard(
+                &config,
+                commands,
+                window,
+                meshes,
+                materials,
+                notes_placement,
+                old_keys,
+            );
         }
     });
     for mut bs in &mut bloom_settings {
@@ -738,78 +762,76 @@ fn ui_config_system(
     };
 }
 pub fn draw_keyboard(
-    config: Res<Configuration>,
+    config: &Configuration,
     mut commands: Commands,
-    mut active_notes: ResMut<ActiveNotes>,
+    // mut active_notes: ResMut<ActiveNotes>,
     window: Query<&Window>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     notes_placement: Res<NotePlacemnt>,
+    old_keys: Query<Entity, With<KeyNote>>,
 ) {
+    for entity in &old_keys {
+        commands.entity(entity).despawn();
+    }
+
     let res = &window.single().resolution;
     let n_width = res.width() / 52.0;
-    let mut nn_width = n_width - 4.;
-    for i in 0..88 {
-        let is_white = if notes_placement.blacks2.contains(&i) {
+    for i in 21..=108 {
+        let is_white = if notes_placement.blacks.contains(&i) {
             false
         } else {
             true
         };
-        if !is_white {
-            commands.spawn((
-                MaterialMesh2dBundle {
-                    mesh: meshes
-                        .add(Rectangle::new(
-                            res.width() / 100.,
-                            config.keyboard_height / 2.,
-                        ))
-                        .into(),
-
-                    material: materials.add(ColorMaterial {
-                        color: if is_white { WHITE.into() } else { GREY.into() },
-                        ..Default::default()
-                    }),
-
-                    transform: Transform::from_xyz(
-                        i as f32 * n_width - res.width() / 2. + n_width / 2.,
-                        -res.height() / 2.,
-                        1.5,
-                    ),
-                    ..default()
-                },
-                KeyNote {
-                    id: i as u8,
-                    white: is_white,
-                },
-            ));
-        }
-    }
-    nn_width = res.width() / 72.;
-    for i in 0..52 {
         commands.spawn((
             MaterialMesh2dBundle {
                 mesh: meshes
-                    .add(Rectangle::new(nn_width, config.keyboard_height))
+                    .add(Rectangle::new(
+                        if is_white {
+                            n_width - 2.
+                        } else {
+                            res.width() / 100.
+                        },
+                        if is_white {
+                            config.keyboard_height
+                        } else {
+                            config.keyboard_height * 3. / 5.
+                        },
+                    ))
                     .into(),
 
                 material: materials.add(ColorMaterial {
-                    color: WHITE.into(),
+                    color: if is_white { WHITE.into() } else { GREY.into() },
                     ..Default::default()
                 }),
 
                 transform: Transform::from_xyz(
-                    i as f32 * n_width - res.width() / 2. + n_width / 2.,
-                    -res.height() / 2.,
-                    1.,
+                    notes_placement
+                            .notes_position
+                            .get(&(i as i8))
+                            .unwrap() as &f32
+                            * n_width
+                            // / 88.
+                            - res.width() / 2.
+                            - 12 as f32 * n_width
+                        + n_width / 2.,
+                    //    -res.height() / 2. + config.keyboard_height,
+                    if is_white {
+                        -res.height() / 2. + config.keyboard_height / 2.
+                    } else {
+                        -res.height() / 2. + config.keyboard_height * 0.7
+                    },
+                    if is_white { 1.2 } else { 1.5 },
                 ),
-
                 ..default()
             },
-            KeyNote { id: i, white: true },
+            KeyNote {
+                id: i as u8,
+                white: is_white,
+            },
         ));
     }
 }
-pub fn get_spacing(x: u8) {}
 pub fn move_keyboard(
     mut keys: Query<(&mut Transform, &KeyNote)>,
     window: Query<&Window>,
@@ -820,39 +842,34 @@ pub fn move_keyboard(
         let res = &window.single().resolution;
         let n_width = res.width() / 52.0;
         let nn_width = n_width - 2.;
-        //    let nn_width = if notes_placement.blacks.contains(&(key_note.id as i8)) {
-        //      res.width() / 72.0
-        //} else {
-        //  res.width() / 52.0 - 2.
-        //};
+
+        let nn_width = if notes_placement.blacks.contains(&(key_note.id as i8)) {
+            res.width() / 72.0
+        } else {
+            res.width() / 52.0 - 2.
+        };
+
         transform.translation = Vec3::new(
-            key_note.id as f32 * n_width - res.width() / 2. + n_width / 2.
-                - if !key_note.white {
-                    res.width() / (52. * 2.)
-                        + if key_note.id > 3 {
-                            n_width
-                                * match (key_note.id - 3) % 12 {
-                                    1 => 0.,
-                                    3 => 1.,
-                                    6 => 2.,
-                                    8 => 3.,
-                                    10 => 4.,
-                                    _ => 0.,
-                                }
-                                + (((key_note.id - 3) / 12) as f32) * n_width * 5.
-                                + n_width
-                        } else {
-                            0.
-                        }
-                } else {
-                    0.
-                },
+            notes_placement
+                            .notes_position
+                            .get(&(key_note.id as i8))
+                            .unwrap() as &f32
+                            * n_width
+                            // / 88.
+                            - res.width() / 2.
+                            - 12 as f32 * n_width
+                + n_width / 2.,
+            //    -res.height() / 2. + config.keyboard_height,
             if key_note.white {
                 -res.height() / 2. + config.keyboard_height / 2.
             } else {
                 -res.height() / 2. + config.keyboard_height / (4. / 3.)
             },
-            if key_note.white { 1. } else { 1.5 },
+            if notes_placement.blacks.contains(&(key_note.id as i8)) {
+                1.5
+            } else {
+                1.2
+            },
         );
     }
 }
