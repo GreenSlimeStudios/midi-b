@@ -76,6 +76,7 @@ fn main() {
         .add_systems(Update, move_notes)
         .add_systems(Update, notes_spawner)
         .add_systems(Update, grow_notes)
+        .add_systems(Update, animate_keyboard)
         .run();
 }
 fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
@@ -639,6 +640,16 @@ pub fn note_placement(mut notes_placement: ResMut<NotePlacemnt>) {
     println!("{:?}", &blacks2);
     notes_placement.blacks2 = blacks2;
 }
+fn decimal_to_intiger_color(arr: &[f32; 4]) -> egui::Color32 {
+    //return [(arr[0]*256.)as  u8,(arr[1]*256.)as u8,(arr[2]) ]
+    let converted = arr.iter().map(|x| (x * 256.) as u8).collect::<Vec<u8>>();
+    return egui::Color32::from_rgba_premultiplied(
+        converted[0],
+        converted[1],
+        converted[2],
+        converted[3],
+    );
+}
 fn ui_config_system(
     mut contexts: EguiContexts,
     mut config: ResMut<Configuration>,
@@ -648,37 +659,18 @@ fn ui_config_system(
     notes_placement: Res<NotePlacemnt>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    old_keys: Query<Entity, With<KeyNote>>,
+    old_keys: Query<Entity, With<KeyboardElement>>,
     mut commands: Commands,
 ) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
     let black_top = config.black_color_top.to_f32_array();
     let black_bottom = config.black_color_bottom.to_f32_array();
-    let mut w_t = egui::Color32::from_rgba_premultiplied(
-        (white_top[0] * 256.) as u8,
-        (white_top[1] * 256.) as u8,
-        (white_top[2] * 256.) as u8,
-        (white_top[3] * 256.) as u8,
-    );
-    let mut w_b = egui::Color32::from_rgba_premultiplied(
-        (white_bottom[0] * 256.) as u8,
-        (white_bottom[1] * 256.) as u8,
-        (white_bottom[2] * 256.) as u8,
-        (white_bottom[3] * 256.) as u8,
-    );
-    let mut b_t = egui::Color32::from_rgba_premultiplied(
-        (black_top[0] * 256.) as u8,
-        (black_top[1] * 256.) as u8,
-        (black_top[2] * 256.) as u8,
-        (black_top[3] * 256.) as u8,
-    );
-    let mut b_b = egui::Color32::from_rgba_premultiplied(
-        (black_bottom[0] * 256.) as u8,
-        (black_bottom[1] * 256.) as u8,
-        (black_bottom[2] * 256.) as u8,
-        (black_bottom[3] * 256.) as u8,
-    );
+    let mut w_t = decimal_to_intiger_color(&white_top);
+    let mut w_b = decimal_to_intiger_color(&white_bottom);
+    let mut b_t = decimal_to_intiger_color(&black_top);
+    let mut b_b = decimal_to_intiger_color(&black_bottom);
+
     egui::Window::new("Config").show(contexts.ctx_mut(), |ui| {
         ui.label("baka");
         ui.label("white top color");
@@ -736,29 +728,17 @@ fn ui_config_system(
     if config.sync_black_notes {
         b_b = b_t;
     }
-    config.white_color_top = Srgba {
-        red: w_t.to_array()[0] as f32 / 256.,
-        green: w_t.to_array()[1] as f32 / 256.,
-        blue: w_t.to_array()[2] as f32 / 256.,
-        alpha: w_t.to_array()[3] as f32 / 256.,
-    };
-    config.white_color_bottom = Srgba {
-        red: w_b.to_array()[0] as f32 / 256.,
-        green: w_b.to_array()[1] as f32 / 256.,
-        blue: w_b.to_array()[2] as f32 / 256.,
-        alpha: w_b.to_array()[3] as f32 / 256.,
-    };
-    config.black_color_top = Srgba {
-        red: b_t.to_array()[0] as f32 / 256.,
-        green: b_t.to_array()[1] as f32 / 256.,
-        blue: b_t.to_array()[2] as f32 / 256.,
-        alpha: b_t.to_array()[3] as f32 / 256.,
-    };
-    config.black_color_bottom = Srgba {
-        red: b_b.to_array()[0] as f32 / 256.,
-        green: b_b.to_array()[1] as f32 / 256.,
-        blue: b_b.to_array()[2] as f32 / 256.,
-        alpha: b_b.to_array()[3] as f32 / 256.,
+    config.white_color_top = compress_color(w_t);
+    config.white_color_bottom = compress_color(w_b);
+    config.black_color_top = compress_color(b_t);
+    config.black_color_bottom = compress_color(b_b);
+}
+fn compress_color(color: egui::Color32) -> Srgba {
+    return Srgba {
+        red: color.to_array()[0] as f32 / 256.,
+        green: color.to_array()[1] as f32 / 256.,
+        blue: color.to_array()[2] as f32 / 256.,
+        alpha: color.to_array()[3] as f32 / 256.,
     };
 }
 pub fn draw_keyboard(
@@ -769,7 +749,7 @@ pub fn draw_keyboard(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     notes_placement: Res<NotePlacemnt>,
-    old_keys: Query<Entity, With<KeyNote>>,
+    old_keys: Query<Entity, With<KeyboardElement>>,
 ) {
     for entity in &old_keys {
         commands.entity(entity).despawn();
@@ -801,7 +781,7 @@ pub fn draw_keyboard(
                     .into(),
 
                 material: materials.add(ColorMaterial {
-                    color: if is_white { WHITE.into() } else { GREY.into() },
+                    color: if is_white { WHITE.into() } else { BLACK.into() },
                     ..Default::default()
                 }),
 
@@ -829,6 +809,23 @@ pub fn draw_keyboard(
                 id: i as u8,
                 white: is_white,
             },
+            KeyboardElement {},
+        ));
+        commands.spawn((
+            MaterialMesh2dBundle {
+                mesh: meshes.add(Rectangle::new(res.width(), 6.)).into(),
+                material: materials.add(ColorMaterial {
+                    color: RED.into(),
+                    ..Default::default()
+                }),
+                transform: Transform::from_xyz(
+                    0., //-res.width() / 2.,
+                    -res.height() / 2. + config.keyboard_height,
+                    2.,
+                ),
+                ..default()
+            },
+            KeyboardElement {},
         ));
     }
 }
@@ -877,4 +874,12 @@ pub fn move_keyboard(
 pub struct KeyNote {
     white: bool,
     id: u8,
+}
+#[derive(Component, Debug)]
+pub struct KeyboardElement {}
+
+pub fn animate_keyboard(
+    mut keys: Query<(&mut Transform, &KeyNote)>,
+    active_notes: Res<ActiveNotes>,
+) {
 }
