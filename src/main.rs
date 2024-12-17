@@ -31,9 +31,25 @@ const BLACK_COLOR_BOTTOM: Srgba = DARK_GRAY;
 const WHITE_COLOR_TOP: Srgba = WHITE;
 const WHITE_COLOR_BOTTOM: Srgba = WHITE;
 const KEYBOARD_WHITE_COLOR: Srgba = WHITE;
-const KEYBOARD_WHITE_COLOR_ACTIVE: Srgba = RED;
-const KEYBOARD_BLACK_COLOR: Srgba = DARK_GRAY;
-const KEYBOARD_BLACK_COLOR_ACTIVE: Srgba = RED;
+const KEYBOARD_WHITE_COLOR_ACTIVE: Srgba = Srgba {
+    red: 190. / 256.,
+    green: 190. / 256.,
+    blue: 190. / 256.,
+    alpha: 1.,
+};
+const KEYBOARD_BLACK_COLOR: Srgba = Srgba {
+    red: 76. / 256.,
+    green: 76. / 256.,
+    blue: 76. / 256.,
+    alpha: 1.,
+};
+const KEYBOARD_BLACK_COLOR_ACTIVE: Srgba = Srgba {
+    red: 138. / 256.,
+    green: 138. / 256.,
+    blue: 138. / 256.,
+    alpha: 1.,
+};
+const KEYBOARD_FELT_COLOR: Srgba = RED;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -66,6 +82,8 @@ fn main() {
             keyboard_black_color: KEYBOARD_BLACK_COLOR,
             keyboard_white_color_active: KEYBOARD_WHITE_COLOR_ACTIVE,
             keyboard_black_color_active: KEYBOARD_BLACK_COLOR_ACTIVE,
+            keyboard_felt_color: KEYBOARD_FELT_COLOR,
+            sync_keyboard_active_color: false,
         })
         .insert_resource(NotePlacemnt {
             notes_position: HashMap::new(),
@@ -611,6 +629,8 @@ pub struct Configuration {
     pub keyboard_black_color: Srgba,
     pub keyboard_white_color_active: Srgba,
     pub keyboard_black_color_active: Srgba,
+    pub keyboard_felt_color: Srgba,
+    pub sync_keyboard_active_color: bool,
     // pub vertex_colors: Vec<[f32; 4]>,
     // pub vertex_colors_blacks: Vec<[f32; 4]>,
     // pub vertex_colors_keyboard: Vec<[f32; 4]>,
@@ -698,6 +718,12 @@ fn ui_config_system(
     let mut b_t = decimal_to_intiger_color(&black_top);
     let mut b_b = decimal_to_intiger_color(&black_bottom);
 
+    let mut k_w = decimal_to_intiger_color(&config.keyboard_white_color.to_f32_array());
+    let mut k_w_a = decimal_to_intiger_color(&config.keyboard_white_color_active.to_f32_array());
+    let mut k_b = decimal_to_intiger_color(&config.keyboard_black_color.to_f32_array());
+    let mut k_b_a = decimal_to_intiger_color(&config.keyboard_black_color_active.to_f32_array());
+    let mut k_f = decimal_to_intiger_color(&config.keyboard_felt_color.to_f32_array());
+
     egui::Window::new("Config").show(contexts.ctx_mut(), |ui| {
         ui.label("baka");
         ui.label("white top color");
@@ -729,6 +755,21 @@ fn ui_config_system(
                 config.bloom_composite_mode = BloomCompositeMode::EnergyConserving;
             }
         }
+        ui.label("keyboard white color");
+        ui.color_edit_button_srgba(&mut k_w);
+        ui.label("keyboard black color");
+        ui.color_edit_button_srgba(&mut k_b);
+        ui.label("keyboard white active color");
+        ui.color_edit_button_srgba(&mut k_w_a);
+        ui.label("keyboard black active color");
+        ui.color_edit_button_srgba(&mut k_b_a);
+        ui.checkbox(
+            &mut config.sync_keyboard_active_color,
+            "sync active keyboard keys",
+        );
+        ui.label("keyboard felt color");
+        ui.color_edit_button_srgba(&mut k_f);
+
         if ui.add(egui::Button::new("Generate Keyboard")).clicked() {
             draw_keyboard(
                 &config,
@@ -756,10 +797,19 @@ fn ui_config_system(
     if config.sync_black_notes {
         b_b = b_t;
     }
+    if config.sync_keyboard_active_color {
+        k_b_a = k_w_a;
+    }
     config.white_color_top = compress_color(w_t);
     config.white_color_bottom = compress_color(w_b);
     config.black_color_top = compress_color(b_t);
     config.black_color_bottom = compress_color(b_b);
+
+    config.keyboard_white_color = compress_color(k_w);
+    config.keyboard_white_color_active = compress_color(k_w_a);
+    config.keyboard_black_color = compress_color(k_b);
+    config.keyboard_black_color_active = compress_color(k_b_a);
+    config.keyboard_felt_color = compress_color(k_f);
 }
 fn compress_color(color: egui::Color32) -> Srgba {
     return Srgba {
@@ -809,17 +859,19 @@ pub fn draw_keyboard(
                 config.keyboard_height * 3. / 5.
             },
         );
-        let vertex_colors: Vec<[f32; 4]> = vec![
-            LinearRgba::from(config.white_color_top).to_f32_array(),
-            LinearRgba::from(config.white_color_top).to_f32_array(),
-            LinearRgba::from(config.white_color_bottom).to_f32_array(),
-            LinearRgba::from(config.white_color_bottom).to_f32_array(),
+
+        let white_colors: Vec<[f32; 4]> = vec![
+            LinearRgba::from(config.keyboard_white_color).to_f32_array(),
+            LinearRgba::from(config.keyboard_white_color).to_f32_array(),
+            LinearRgba::from(config.keyboard_white_color).to_f32_array(),
+            LinearRgba::from(config.keyboard_white_color).to_f32_array(),
         ];
-        let vertex_colors_blacks: Vec<[f32; 4]> = vec![
-            LinearRgba::from(config.black_color_top).to_f32_array(),
-            LinearRgba::from(config.black_color_top).to_f32_array(),
-            LinearRgba::from(config.black_color_bottom).to_f32_array(),
-            LinearRgba::from(config.black_color_bottom).to_f32_array(),
+
+        let black_colors: Vec<[f32; 4]> = vec![
+            LinearRgba::from(config.keyboard_black_color).to_f32_array(),
+            LinearRgba::from(config.keyboard_black_color).to_f32_array(),
+            LinearRgba::from(config.keyboard_black_color).to_f32_array(),
+            LinearRgba::from(config.keyboard_black_color).to_f32_array(),
         ];
 
         let mesh_handle: Handle<Mesh> = meshes.add(mesh);
@@ -829,9 +881,9 @@ pub fn draw_keyboard(
             .insert_attribute(
                 Mesh::ATTRIBUTE_COLOR,
                 if notes_placement.blacks.contains(&(i as i8)) {
-                    vertex_colors_blacks
+                    black_colors
                 } else {
-                    vertex_colors
+                    white_colors
                 },
             );
         commands.spawn((
@@ -891,7 +943,7 @@ pub fn draw_keyboard(
             MaterialMesh2dBundle {
                 mesh: meshes.add(Rectangle::new(res.width(), 6.)).into(),
                 material: materials.add(ColorMaterial {
-                    color: RED.into(),
+                    color: config.keyboard_felt_color.into(),
                     ..Default::default()
                 }),
                 transform: Transform::from_xyz(
@@ -1019,7 +1071,7 @@ pub fn animate_keyboard(
                 }
             }
         } else if key_note.active {
-            println!("shall not be active");
+            // println!("shall not be active");
             for (note, handle) in &mut keyboard_note_meshes.keyboard_handles.iter() {
                 if note == &(key_note.id as i32) {
                     let mut mesh = meshes.get_mut(handle).unwrap();
