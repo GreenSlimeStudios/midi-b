@@ -1,18 +1,15 @@
 // use bevy::core_pipeline::clear_color::ClearColorConfig;
 extern crate midir;
 use bevy::color::palettes::css::*;
-use bevy::ecs::query::QueryFilter;
-use bevy::gizmos::config;
-use bevy::prelude::*;
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use bevy::utils::HashMap;
-use bevy::{
-    core_pipeline::{
-        bloom::{BloomCompositeMode, BloomSettings},
-        tonemapping::Tonemapping,
-    },
-    prelude::*,
+// use bevy::ecs::query::QueryFilter;
+// use bevy::gizmos::config;
+use bevy::core_pipeline::{
+    bloom::{BloomCompositeMode, BloomSettings},
+    tonemapping::Tonemapping,
 };
+use bevy::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
+use bevy::utils::HashMap;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
 use midir::{Ignore, MidiInput};
 use std::error::Error;
@@ -20,7 +17,7 @@ use std::fs;
 use std::fs::File;
 use std::io::{stdin, stdout, Write};
 use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
+// use std::thread::JoinHandle;
 
 use std::time;
 
@@ -315,7 +312,7 @@ fn grow_notes(
 ) {
     for (note, handle) in &mut note_meshes.note_handles.iter() {
         // info!("{:?},{:?}", note, handle);
-        let mut mesh = meshes.get_mut(handle).unwrap();
+        let mesh = meshes.get_mut(handle).unwrap();
         // mesh.insert_attribute(mesh::ATTRIBUT)
         // let vertex_colors: Vec<[f32; 4]> = vec![
         //     Color::RED.as_rgba_f32(),
@@ -703,11 +700,11 @@ fn ui_config_system(
     //mut keys: Query<(&mut Transform, &KeyNote)>,
     window: Query<&Window>,
     notes_placement: Res<NotePlacemnt>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    meshes: ResMut<Assets<Mesh>>,
+    materials: ResMut<Assets<ColorMaterial>>,
     old_keys: Query<Entity, With<KeyboardElement>>,
-    mut commands: Commands,
-    mut keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
+    commands: Commands,
+    keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
 ) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
@@ -843,10 +840,10 @@ pub fn draw_keyboard(
         } else {
             true
         };
-        let material = ColorMaterial {
-            color: if is_white { WHITE.into() } else { BLACK.into() },
-            ..Default::default()
-        };
+        // let material = ColorMaterial {
+        //     color: if is_white { WHITE.into() } else { BLACK.into() },
+        //     ..Default::default()
+        // };
         let mesh = Rectangle::new(
             if is_white {
                 n_width - 2.
@@ -966,13 +963,13 @@ pub fn move_keyboard(
     for (mut transform, key_note) in &mut keys {
         let res = &window.single().resolution;
         let n_width = res.width() / 52.0;
-        let nn_width = n_width - 2.;
+        // let nn_width = n_width - 2.;
 
-        let nn_width = if notes_placement.blacks.contains(&(key_note.id as i8)) {
-            res.width() / 72.0
-        } else {
-            res.width() / 52.0 - 2.
-        };
+        // let nn_width = if notes_placement.blacks.contains(&(key_note.id as i8)) {
+        //     res.width() / 72.0
+        // } else {
+        //     res.width() / 52.0 - 2.
+        // };
 
         transform.translation = Vec3::new(
             notes_placement
@@ -1011,8 +1008,8 @@ pub struct KeyboardElement {}
 pub fn animate_keyboard(
     mut keys: Query<(&mut Transform, &mut KeyNote)>,
     active_notes: Res<ActiveNotes>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
+    // materials: ResMut<Assets<StandardMaterial>>,
+    keyboard_note_meshes: Res<KeyboardNoteMeshes>,
     mut meshes: ResMut<Assets<Mesh>>,
     config: Res<Configuration>,
     notes_placement: Res<NotePlacemnt>,
@@ -1042,7 +1039,7 @@ pub fn animate_keyboard(
         LinearRgba::from(config.keyboard_black_color_active).to_f32_array(),
     ];
 
-    for (transform, mut key_note) in &mut keys {
+    for (_transform, mut key_note) in &mut keys {
         if active_notes.active_notes.contains(&(key_note.id as i32)) {
             // println!("key{:?}", key_note);
             // for(id,mut handle)in keyboard_note_meshes.keyboard_handles{
@@ -1074,7 +1071,7 @@ pub fn animate_keyboard(
             // println!("shall not be active");
             for (note, handle) in &mut keyboard_note_meshes.keyboard_handles.iter() {
                 if note == &(key_note.id as i32) {
-                    let mut mesh = meshes.get_mut(handle).unwrap();
+                    let mesh = meshes.get_mut(handle).unwrap();
                     if notes_placement.blacks.contains(&(key_note.id as i8)) {
                         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, black_colors.clone());
                     } else {
