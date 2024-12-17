@@ -18,9 +18,12 @@ use std::fs::File;
 use std::io::{stdin, stdout, Write};
 use std::sync::{Arc, Mutex};
 // use std::thread::JoinHandle;
+use bevy::window::WindowResized;
 
 use std::time;
 
+const STARTING_NOTE: i8 = 21;
+const ENDING_NOTE: i8 = 108;
 const NOTE_SPEED: f32 = 150.;
 const NOTE_WIDTH: f32 = 15.;
 const BLACK_COLOR_TOP: Srgba = DARK_GRAY;
@@ -81,6 +84,8 @@ fn main() {
             keyboard_black_color_active: KEYBOARD_BLACK_COLOR_ACTIVE,
             keyboard_felt_color: KEYBOARD_FELT_COLOR,
             sync_keyboard_active_color: false,
+            starting_note: STARTING_NOTE,
+            ending_note: ENDING_NOTE,
         })
         .insert_resource(NotePlacemnt {
             notes_position: HashMap::new(),
@@ -90,9 +95,14 @@ fn main() {
         .insert_resource(NoteMeshes {
             note_handles: Vec::new(),
         })
+        .insert_resource(NoteOffset {
+            offset: 0f32,
+            whites_count: 52f32,
+        })
         .insert_resource(KeyboardNoteMeshes {
             keyboard_handles: Vec::new(),
         })
+        .add_systems(Update, window_resize_system)
         .add_systems(Update, ui_config_system)
         .add_systems(Startup, note_placement)
         .insert_resource(ActiveNotes {
@@ -106,6 +116,47 @@ fn main() {
         .add_systems(Update, animate_keyboard)
         .run();
 }
+fn window_resize_system(
+    mut resize_reader: EventReader<WindowResized>,
+    config: Res<Configuration>,
+    note_offset: ResMut<NoteOffset>,
+    commands: Commands,
+    window: Query<&Window>,
+    meshes: ResMut<Assets<Mesh>>,
+    materials: ResMut<Assets<ColorMaterial>>,
+    notes_placement: Res<NotePlacemnt>,
+    old_keys: Query<Entity, With<KeyboardElement>>,
+    keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
+) {
+    for event in resize_reader.read() {
+        println!(
+            "Window resized to width: {} and height: {}",
+            event.width, event.height
+        );
+        // note_offset.offset=count_whites(config.starting_note, config.ending_note, blacks)
+
+        //generate keyboard
+        draw_keyboard(
+            &config,
+            commands,
+            window,
+            meshes,
+            materials,
+            notes_placement,
+            old_keys,
+            keyboard_note_meshes,
+            &note_offset,
+        );
+        break;
+    }
+}
+
+#[derive(Resource)]
+pub struct NoteOffset {
+    pub offset: f32,
+    pub whites_count: f32,
+}
+
 fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
     let mut ofile = File::create("info.txt").expect("unable to create file");
     ofile.write_all("".as_bytes()).expect("unable to write");
@@ -230,7 +281,7 @@ fn write_notes_to_file(act_notes: &Vec<i32>) {
     ofile.write_all(out.as_bytes()).expect("unable to write");
 }
 fn display_board(act_notes: &Vec<i32>) {
-    for i in 21..=108 {
+    for i in STARTING_NOTE..=ENDING_NOTE {
         if act_notes.contains(&(i as i32)) {
             print!("X");
         } else {
@@ -283,7 +334,7 @@ fn setup(mut commands: Commands) {
             // composite_mode: BloomCompositeMode::Additive,
             composite_mode: BloomCompositeMode::EnergyConserving,
             low_frequency_boost: 0.3,
-            high_pass_frequency: 0.7,
+            high_pass_frequency: 0.694,
             // prefilter_settings
             ..Default::default()
         },
@@ -356,6 +407,7 @@ fn notes_spawner(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut note_meshes: ResMut<NoteMeshes>,
     config: Res<Configuration>,
+    note_offset: Res<NoteOffset>,
 ) {
     let contents = fs::read_to_string("info.txt").expect("Something went wrong reading the file");
     let mut notes_string: Vec<&str> = contents.split("\n").collect();
@@ -364,7 +416,7 @@ fn notes_spawner(
 
     let notes: Vec<i32>;
     let res = &window.single().resolution;
-    let n_width = res.width() / 52.0;
+    let n_width = res.width() / note_offset.whites_count;
 
     if !notes_string.is_empty() {
         notes = notes_string
@@ -377,9 +429,9 @@ fn notes_spawner(
 
     for i in 0..notes.len() {
         let nn_width = if notes_placement.blacks.contains(&(notes[i] as i8)) {
-            res.width() / 72.0
+            res.width() / note_offset.whites_count * 0.694
         } else {
-            res.width() / 52.0 - 2.
+            res.width() / note_offset.whites_count - 2.
         };
 
         if !active_notes.active_notes.contains(&notes[i]) {
@@ -451,7 +503,8 @@ fn notes_spawner(
                             // / 88.
                             - res.width() / 2.
                             - 12 as f32 * n_width
-                            + n_width / 2.,
+                            + n_width / 2.
+                            - note_offset.offset * n_width,
                         -res.height() / 2. + config.keyboard_height,
                         if notes_placement.blacks.contains(&(notes[i] as i8)) {
                             0.5
@@ -485,7 +538,8 @@ fn notes_spawner(
                             // / 88.
                             - res.width() / 2.
                             - 12 as f32 * n_width
-                            + n_width / 2.,
+                            + n_width / 2.
+                            - note_offset.offset * n_width,
                         -res.height() / 2. + config.keyboard_height,
                         if notes_placement.blacks.contains(&(notes[i] as i8)) {
                             1.
@@ -539,10 +593,11 @@ fn notes_spawner(
                 .blacks
                 .contains(&(active_notes.active_notes[i] as i8))
             {
-                res.width() / 72.0
+                res.width() / note_offset.whites_count * 0.694
             } else {
-                res.width() / 52.0 - 2.
+                res.width() / note_offset.whites_count - 2.
             };
+
             commands.spawn((
                 MaterialMesh2dBundle {
                     mesh: meshes
@@ -571,7 +626,8 @@ fn notes_spawner(
                             // / 88.
                             - res.width() / 2.
                             - 12 as f32 * n_width
-                            + n_width / 2.,
+                            + n_width / 2.
+                            - note_offset.offset * n_width,
                         -res.height() / 2. + config.keyboard_height,
                         if notes_placement
                             .blacks
@@ -609,6 +665,8 @@ pub struct ActiveNotes {
 }
 #[derive(Resource, Clone, Copy)]
 pub struct Configuration {
+    pub starting_note: i8,
+    pub ending_note: i8,
     pub keyboard_height: f32,
     pub show_keyboard: bool,
     pub enable_bloom: bool,
@@ -705,6 +763,7 @@ fn ui_config_system(
     old_keys: Query<Entity, With<KeyboardElement>>,
     commands: Commands,
     keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
+    mut note_offset: ResMut<NoteOffset>,
 ) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
@@ -735,9 +794,14 @@ fn ui_config_system(
         ui.color_edit_button_srgba(&mut b_b);
         ui.checkbox(&mut config.sync_black_notes, "sync black notes");
         ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
-        ui.add(
+        let k_height = ui.add(
             egui::Slider::new(&mut config.keyboard_height, 100.0..=300.0).text("keyboard height"),
         );
+        let s_note =
+            ui.add(egui::Slider::new(&mut config.starting_note, 21..=108).text("starting note"));
+        let e_note =
+            ui.add(egui::Slider::new(&mut config.ending_note, 21..=108).text("ending note"));
+
         ui.checkbox(&mut config.enable_bloom, "enable bloom");
         if config.enable_bloom {
             ui.add(
@@ -753,9 +817,9 @@ fn ui_config_system(
             }
         }
         ui.label("keyboard white color");
-        ui.color_edit_button_srgba(&mut k_w);
+        let w_color = ui.color_edit_button_srgba(&mut k_w);
         ui.label("keyboard black color");
-        ui.color_edit_button_srgba(&mut k_b);
+        let b_color = ui.color_edit_button_srgba(&mut k_b);
         ui.label("keyboard white active color");
         ui.color_edit_button_srgba(&mut k_w_a);
         ui.label("keyboard black active color");
@@ -765,9 +829,24 @@ fn ui_config_system(
             "sync active keyboard keys",
         );
         ui.label("keyboard felt color");
-        ui.color_edit_button_srgba(&mut k_f);
+        let felt = ui.color_edit_button_srgba(&mut k_f);
 
-        if ui.add(egui::Button::new("Generate Keyboard")).clicked() {
+        let keyboard_gen_button = ui.add(egui::Button::new("Generate Keyboard"));
+        if s_note.changed()
+            || e_note.changed()
+            || keyboard_gen_button.clicked()
+            || k_height.changed()
+            || felt.changed()
+            || w_color.changed()
+            || b_color.changed()
+        {
+            note_offset.offset = count_whites(21, config.starting_note, &notes_placement.blacks);
+            note_offset.whites_count = count_whites(
+                config.starting_note,
+                config.ending_note + 1,
+                &notes_placement.blacks,
+            );
+
             draw_keyboard(
                 &config,
                 commands,
@@ -777,6 +856,7 @@ fn ui_config_system(
                 notes_placement,
                 old_keys,
                 keyboard_note_meshes,
+                &note_offset,
             );
         }
     });
@@ -816,6 +896,19 @@ fn compress_color(color: egui::Color32) -> Srgba {
         alpha: color.to_array()[3] as f32 / 256.,
     };
 }
+
+fn count_whites(start: i8, end: i8, blacks: &Vec<i8>) -> f32 {
+    let mut count = 0f32;
+    // if start==end{return 0f32;}
+    for i in start..end {
+        if !blacks.contains(&i) {
+            count = count + 1.;
+        }
+    }
+    println!("{} {} {}", start, end, count);
+    count
+}
+
 pub fn draw_keyboard(
     config: &Configuration,
     mut commands: Commands,
@@ -826,6 +919,7 @@ pub fn draw_keyboard(
     notes_placement: Res<NotePlacemnt>,
     old_keys: Query<Entity, With<KeyboardElement>>,
     mut keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
+    note_offset: &NoteOffset,
 ) {
     for entity in &old_keys {
         commands.entity(entity).despawn();
@@ -833,22 +927,18 @@ pub fn draw_keyboard(
     keyboard_note_meshes.keyboard_handles.clear();
 
     let res = &window.single().resolution;
-    let n_width = res.width() / 52.0;
-    for i in 21..=108 {
+    let n_width = res.width() / note_offset.whites_count;
+    for i in config.starting_note..=config.ending_note {
         let is_white = if notes_placement.blacks.contains(&i) {
             false
         } else {
             true
         };
-        // let material = ColorMaterial {
-        //     color: if is_white { WHITE.into() } else { BLACK.into() },
-        //     ..Default::default()
-        // };
         let mesh = Rectangle::new(
             if is_white {
                 n_width - 2.
             } else {
-                res.width() / 100.
+                n_width * 0.45
             },
             if is_white {
                 config.keyboard_height
@@ -913,12 +1003,13 @@ pub fn draw_keyboard(
                             // / 88.
                             - res.width() / 2.
                             - 12 as f32 * n_width
+                            -note_offset.offset*n_width
                         + n_width / 2.,
                     //    -res.height() / 2. + config.keyboard_height,
                     if is_white {
                         -res.height() / 2. + config.keyboard_height / 2.
                     } else {
-                        -res.height() / 2. + config.keyboard_height * 0.7
+                        -res.height() / 2. + config.keyboard_height * 0.694
                     },
                     if is_white { 1.2 } else { 1.5 },
                 ),
