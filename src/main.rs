@@ -2,6 +2,7 @@
 extern crate midir;
 use bevy::color::palettes::css::*;
 use bevy::ecs::query::QueryFilter;
+use bevy::gizmos::config;
 use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::utils::HashMap;
@@ -65,6 +66,9 @@ fn main() {
         })
         .insert_resource(NoteMeshes {
             note_handles: Vec::new(),
+        })
+        .insert_resource(KeyboardNoteMeshes {
+            keyboard_handles: Vec::new(),
         })
         .add_systems(Update, ui_config_system)
         .add_systems(Startup, note_placement)
@@ -600,6 +604,10 @@ pub struct Configuration {
 pub struct NoteMeshes {
     pub note_handles: Vec<(i32, Handle<Mesh>)>,
 }
+#[derive(Resource)]
+pub struct KeyboardNoteMeshes {
+    pub keyboard_handles: Vec<(i32, Handle<Mesh>)>,
+}
 #[derive(Resource, Debug)]
 pub struct NotePlacemnt {
     pub notes_position: HashMap<i8, f32>,
@@ -661,6 +669,7 @@ fn ui_config_system(
     mut materials: ResMut<Assets<ColorMaterial>>,
     old_keys: Query<Entity, With<KeyboardElement>>,
     mut commands: Commands,
+    mut keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
 ) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
@@ -711,6 +720,7 @@ fn ui_config_system(
                 materials,
                 notes_placement,
                 old_keys,
+                keyboard_note_meshes,
             );
         }
     });
@@ -750,6 +760,7 @@ pub fn draw_keyboard(
     mut materials: ResMut<Assets<ColorMaterial>>,
     notes_placement: Res<NotePlacemnt>,
     old_keys: Query<Entity, With<KeyboardElement>>,
+    mut keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
 ) {
     for entity in &old_keys {
         commands.entity(entity).despawn();
@@ -763,27 +774,67 @@ pub fn draw_keyboard(
         } else {
             true
         };
+        let material = ColorMaterial {
+            color: if is_white { WHITE.into() } else { BLACK.into() },
+            ..Default::default()
+        };
+        let mesh = Rectangle::new(
+            if is_white {
+                n_width - 2.
+            } else {
+                res.width() / 100.
+            },
+            if is_white {
+                config.keyboard_height
+            } else {
+                config.keyboard_height * 3. / 5.
+            },
+        );
+        let vertex_colors: Vec<[f32; 4]> = vec![
+            LinearRgba::from(config.white_color_top).to_f32_array(),
+            LinearRgba::from(config.white_color_top).to_f32_array(),
+            LinearRgba::from(config.white_color_bottom).to_f32_array(),
+            LinearRgba::from(config.white_color_bottom).to_f32_array(),
+        ];
+        let vertex_colors_blacks: Vec<[f32; 4]> = vec![
+            LinearRgba::from(config.black_color_top).to_f32_array(),
+            LinearRgba::from(config.black_color_top).to_f32_array(),
+            LinearRgba::from(config.black_color_bottom).to_f32_array(),
+            LinearRgba::from(config.black_color_bottom).to_f32_array(),
+        ];
+
+        let mesh_handle: Handle<Mesh> = meshes.add(mesh);
+        meshes
+            .get_mut(&mesh_handle.clone())
+            .unwrap()
+            .insert_attribute(
+                Mesh::ATTRIBUTE_COLOR,
+                if notes_placement.blacks.contains(&(i as i8)) {
+                    vertex_colors_blacks
+                } else {
+                    vertex_colors
+                },
+            );
         commands.spawn((
             MaterialMesh2dBundle {
-                mesh: meshes
-                    .add(Rectangle::new(
-                        if is_white {
-                            n_width - 2.
-                        } else {
-                            res.width() / 100.
-                        },
-                        if is_white {
-                            config.keyboard_height
-                        } else {
-                            config.keyboard_height * 3. / 5.
-                        },
-                    ))
-                    .into(),
+                // mesh: meshes
+                //     .add(Rectangle::new(
+                //         if is_white {
+                //             n_width - 2.
+                //         } else {
+                //             res.width() / 100.
+                //         },
+                //         if is_white {
+                //             config.keyboard_height
+                //         } else {
+                //             config.keyboard_height * 3. / 5.
+                //         },
+                //     ))
+                //     .into(),
+                mesh: mesh_handle.clone().into(),
 
-                material: materials.add(ColorMaterial {
-                    color: if is_white { WHITE.into() } else { BLACK.into() },
-                    ..Default::default()
-                }),
+                // material: materials.add(material),
+                material: materials.add(ColorMaterial::default()),
 
                 transform: Transform::from_xyz(
                     notes_placement
@@ -811,6 +862,9 @@ pub fn draw_keyboard(
             },
             KeyboardElement {},
         ));
+        //clear before adding
+
+        //keyboard_note_meshes.keyboard_handles.push((i as i32, mesh_handle));
         commands.spawn((
             MaterialMesh2dBundle {
                 mesh: meshes.add(Rectangle::new(res.width(), 6.)).into(),
@@ -872,8 +926,10 @@ pub fn move_keyboard(
 }
 #[derive(Component, Debug)]
 pub struct KeyNote {
+    // active: bool,
     white: bool,
     id: u8,
+    // handle: Handle,
 }
 #[derive(Component, Debug)]
 pub struct KeyboardElement {}
@@ -881,5 +937,42 @@ pub struct KeyboardElement {}
 pub fn animate_keyboard(
     mut keys: Query<(&mut Transform, &KeyNote)>,
     active_notes: Res<ActiveNotes>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    config: Res<Configuration>
 ) {
+             let vertex_colors: Vec<[f32; 4]> = vec![
+                LinearRgba::from(RED).to_f32_array(),
+                LinearRgba::from(RED).to_f32_array(),
+                LinearRgba::from(RED).to_f32_array(),
+                LinearRgba::from(RED).to_f32_array(),
+            ];
+            let vertex_colors_blacks: Vec<[f32; 4]> = vec![
+                LinearRgba::from(config.black_color_top).to_f32_array(),
+                LinearRgba::from(config.black_color_top).to_f32_array(),
+                LinearRgba::from(config.black_color_bottom).to_f32_array(),
+                LinearRgba::from(config.black_color_bottom).to_f32_array(),
+            ];   
+
+    for (mut transform, key_note) in &mut keys {
+        if (active_notes.active_notes.contains(&(key_note.id as i32))) {
+            // println!("key{:?}", key_note);
+            // for(id,mut handle)in keyboard_note_meshes.keyboard_handles{
+            for (note, handle) in &mut keyboard_note_meshes.keyboard_handles.iter() {
+                if note == &(key_note.id as i32) {
+                    let mut mesh = meshes.get_mut(handle).unwrap();
+
+                    
+            
+                    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, vertex_colors.clone());
+            
+                    // let material=materials.get_mut(handle).unwrap();
+                    // println!("{:?}",material);
+                }
+                // for (note, handle) in &mut note_meshes.note_handles.iter() {
+                // info!("{:?},{:?}", note, handle);
+            }
+        }
+    }
 }
