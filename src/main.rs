@@ -176,7 +176,7 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
     whitelisted_inputs.pop();
     // let whitelisted_inputs_u8: Vec<u8> = whitelisted_inputs.into().map(|x| x.parse.unwrap());
 
-    let whitelisted_inputs_u8: Vec<u8> = !vec[128,144]; 
+    let whitelisted_inputs_u8: Vec<u8> = vec![128,144]; 
         //whitelisted_inputs
         //.into_iter()
         //.map(|x| x.parse().unwrap())
