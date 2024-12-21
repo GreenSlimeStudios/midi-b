@@ -176,10 +176,11 @@ fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
     whitelisted_inputs.pop();
     // let whitelisted_inputs_u8: Vec<u8> = whitelisted_inputs.into().map(|x| x.parse.unwrap());
 
-    let whitelisted_inputs_u8: Vec<u8> = whitelisted_inputs
-        .into_iter()
-        .map(|x| x.parse().unwrap())
-        .collect();
+    let whitelisted_inputs_u8: Vec<u8> = !vec[128,144]; 
+        //whitelisted_inputs
+        //.into_iter()
+        //.map(|x| x.parse().unwrap())
+        //.collect();
 
     println!("Whitelisted inputs\n{:?}", whitelisted_inputs_u8);
 
@@ -278,7 +279,7 @@ fn write_notes_to_file(act_notes: &Vec<i32>) {
     }
 
     let mut ofile = File::create("info.txt").expect("unable to create file");
-    ofile.write_all(out.as_bytes()).expect("unable to write");
+    // ofile.write_all(out.as_bytes()).expect("unable to write");
 }
 fn display_board(act_notes: &Vec<i32>) {
     for i in STARTING_NOTE..=ENDING_NOTE {
@@ -289,7 +290,7 @@ fn display_board(act_notes: &Vec<i32>) {
         }
     }
     println!();
-    // write_notes_to_file(act_notes);
+     write_notes_to_file(act_notes);
 }
 fn handle_note(note: i32, act_notes: &mut Vec<i32>) {
     // println!("{}",note);
