@@ -279,7 +279,7 @@ fn write_notes_to_file(act_notes: &Vec<i32>) {
     }
 
     let mut ofile = File::create("info.txt").expect("unable to create file");
-    // ofile.write_all(out.as_bytes()).expect("unable to write");
+     ofile.write_all(out.as_bytes()).expect("unable to write");
 }
 fn display_board(act_notes: &Vec<i32>) {
     for i in STARTING_NOTE..=ENDING_NOTE {
