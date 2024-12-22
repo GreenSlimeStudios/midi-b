@@ -10,8 +10,7 @@ use bevy::core_pipeline::{
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::utils::HashMap;
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use midir::{Ignore, MidiInput};
+
 use std::error::Error;
 use std::fs;
 use std::fs::File;
@@ -19,8 +18,6 @@ use std::io::{stdin, stdout, Write};
 use std::sync::{Arc, Mutex};
 // use std::thread::JoinHandle;
 use bevy::window::WindowResized;
-
-use std::time;
 
 pub mod midi_flow;
 pub mod ui_config;
