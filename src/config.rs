@@ -29,7 +29,6 @@ const KEYBOARD_BLACK_COLOR_ACTIVE: Srgba = Srgba {
 };
 const KEYBOARD_FELT_COLOR: Srgba = RED;
 
-
 pub struct ConfigPlugin;
 
 impl Plugin for ConfigPlugin {
@@ -56,6 +55,7 @@ impl Plugin for ConfigPlugin {
             sync_keyboard_active_color: false,
             starting_note: STARTING_NOTE,
             ending_note: ENDING_NOTE,
+            background_color:BLACK,
         });
     }
 }
@@ -83,6 +83,7 @@ pub struct Configuration {
     pub keyboard_black_color_active: Srgba,
     pub keyboard_felt_color: Srgba,
     pub sync_keyboard_active_color: bool,
+    pub background_color: Srgba,
     // pub vertex_colors: Vec<[f32; 4]>,
     // pub vertex_colors_blacks: Vec<[f32; 4]>,
     // pub vertex_colors_keyboard: Vec<[f32; 4]>,

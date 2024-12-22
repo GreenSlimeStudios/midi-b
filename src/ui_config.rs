@@ -110,6 +110,10 @@ pub fn ui_config_system(
         ui.label("keyboard felt color");
         let felt = ui.color_edit_button_srgba(&mut k_f);
 
+        if ui.button("save default").clicked() {
+            save_config(&config);
+        }
+
         let keyboard_gen_button = ui.add(egui::Button::new("Generate Keyboard"));
         if s_note.changed()
             || e_note.changed()
@@ -175,4 +179,47 @@ fn compress_color(color: egui::Color32) -> Srgba {
         blue: color.to_array()[2] as f32 / 256.,
         alpha: color.to_array()[3] as f32 / 256.,
     };
+}
+fn format_color(color: Srgba) -> String {
+    let mut out = String::new();
+    out.push_str(&color.red.to_string());
+    out += ",";
+    out.push_str(&color.green.to_string());
+    out += ",";
+    out.push_str(&color.blue.to_string());
+    out += ",";
+    out.push_str(&color.alpha.to_string());
+    out
+}
+
+fn save_config(config: &Configuration) {
+    let mut out: String = String::new();
+
+    out.push_str(
+        format!(
+            "note_speed:{}\nstarting_note:{}\nending_note:{}\nenable_bloom:{}\nnote_width:{}\nsync_white_notes:{}\nsync_black_notes:{}\nsync_keyboard_active_color:{}\nkeyboard_height:{}\nshow_keyboard:{}\n",
+            config.note_speed, config.starting_note, config.ending_note, config.enable_bloom,config.note_width,config.sync_white_notes,config.sync_black_notes,config.sync_keyboard_active_color,config.keyboard_height,config.show_keyboard
+        )
+        .as_str(),
+    );
+    out.push_str(
+        format!(
+            "white_top:{}\nwhite_bottom:{}\nblack_top:{}\nblack_bottom:{}\nkeyboard_black:{}\nkeyboard_black_active:{}\nkeyboard_white:{}\nkeyboard_white_active{}\nkeyboard_felt:{}\nbackground_color:{}\n",
+            format_color(config.white_color_top),
+            format_color(config.white_color_bottom),
+            format_color(config.black_color_top),
+            format_color(config.black_color_bottom),
+            format_color(config.keyboard_black_color),
+            format_color(config.keyboard_black_color_active),
+            format_color(config.keyboard_white_color),
+            format_color(config.keyboard_white_color_active),
+            format_color(config.keyboard_felt_color),
+            format_color(config.background_color),
+        )
+        .as_str(),
+    );
+
+    let mut ofile = File::create("save_default.txt").expect("unable to create file");
+
+    ofile.write_all(out.as_bytes()).expect("unable to write");
 }
