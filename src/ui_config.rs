@@ -3,9 +3,10 @@ extern crate midir;
 // use bevy::ecs::query::QueryFilter;
 // use bevy::gizmos::config;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, scene::ron::value};
 
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
+use std::fs::read_to_string;
 
 // use std::thread::JoinHandle;
 use crate::*;
@@ -113,6 +114,9 @@ pub fn ui_config_system(
         if ui.button("save default").clicked() {
             save_config(&config);
         }
+        if ui.button("load default").clicked() {
+            load_config(&mut config);
+        }
 
         let keyboard_gen_button = ui.add(egui::Button::new("Generate Keyboard"));
         if s_note.changed()
@@ -170,6 +174,12 @@ pub fn ui_config_system(
     config.keyboard_black_color = compress_color(k_b);
     config.keyboard_black_color_active = compress_color(k_b_a);
     config.keyboard_felt_color = compress_color(k_f);
+
+    egui::Window::new("Load config").show(contexts.ctx_mut(), |ui| {
+        if ui.button("load default").clicked() {
+            load_config(&mut config);
+        }
+    });
 }
 
 fn compress_color(color: egui::Color32) -> Srgba {
@@ -204,7 +214,7 @@ fn save_config(config: &Configuration) {
     );
     out.push_str(
         format!(
-            "white_top:{}\nwhite_bottom:{}\nblack_top:{}\nblack_bottom:{}\nkeyboard_black:{}\nkeyboard_black_active:{}\nkeyboard_white:{}\nkeyboard_white_active{}\nkeyboard_felt:{}\nbackground_color:{}\n",
+            "white_top:{}\nwhite_bottom:{}\nblack_top:{}\nblack_bottom:{}\nkeyboard_black:{}\nkeyboard_black_active:{}\nkeyboard_white:{}\nkeyboard_white_active:{}\nkeyboard_felt:{}\nbackground_color:{}\n",
             format_color(config.white_color_top),
             format_color(config.white_color_bottom),
             format_color(config.black_color_top),
@@ -222,4 +232,166 @@ fn save_config(config: &Configuration) {
     let mut ofile = File::create("save_default.txt").expect("unable to create file");
 
     ofile.write_all(out.as_bytes()).expect("unable to write");
+}
+
+fn load_config(config: &mut Configuration) {
+    for line in read_to_string("save_default.txt").unwrap().lines() {
+        let values: Vec<&str> = line.split(":").collect();
+        println!("{}:{}", &values[0], &values[1]);
+        match values[0] {
+            "white_top" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.white_color_top = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "white_bottom" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.white_color_bottom = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "black_top" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.black_color_top = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "black_bottom" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.black_color_bottom = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "keyboard_white" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.keyboard_white_color = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "keyboard_white_active" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.keyboard_white_color_active = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "keyboard_black" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.keyboard_black_color = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "keyboard_black_active" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.keyboard_black_color_active = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "keyboard_felt" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.keyboard_felt_color = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "background_color" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.background_color = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "note_speed" => {
+                config.note_speed = values[1].parse::<f32>().unwrap();
+            }
+            "starting_note"=>{
+                config.starting_note=values[1].parse().unwrap();
+            }
+            "keyboard_height"=>{
+                config.keyboard_height=values[1].parse().unwrap();
+            }
+            "ending_note"=>{
+                config.ending_note=values[1].parse().unwrap();
+            }
+            "enable_bloom"=>{
+                config.enable_bloom=values[1].parse().unwrap();
+            }
+            "note_width"=>{
+                config.note_width=values[1].parse().unwrap();
+            }
+            "sync_white_notes"=>{
+                config.sync_white_notes=values[1].parse().unwrap();
+            }
+            "sync_black_notes"=>{
+                config.sync_black_notes=values[1].parse().unwrap();
+            }
+            "show_keyboard" => {
+                config.show_keyboard = values[1].parse().unwrap();
+            }
+            "sync_keyboard_active_color" => {
+                config.sync_keyboard_active_color = values[1].parse().unwrap();
+            }
+            _ => {
+                println!("detected unknown config line: {}", &values[0]);
+            }
+        }
+    }
 }

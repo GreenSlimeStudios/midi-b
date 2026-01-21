@@ -60,7 +60,7 @@ impl Plugin for ConfigPlugin {
     }
 }
 
-#[derive(Resource, Clone, Copy)]
+#[derive(Resource, Clone, Copy, Debug)]
 pub struct Configuration {
     pub starting_note: i8,
     pub ending_note: i8,
