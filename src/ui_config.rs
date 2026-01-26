@@ -60,18 +60,30 @@ pub fn ui_config_system(
     let mut k_b_a = decimal_to_intiger_color(&config.keyboard_black_color_active.to_f32_array());
     let mut k_f = decimal_to_intiger_color(&config.keyboard_felt_color.to_f32_array());
 
+    let mut is_color_changed: bool = false;
+
     egui::Window::new("Config").show(contexts.ctx_mut(), |ui| {
         ui.label("baka");
         ui.label("white top color");
-        ui.color_edit_button_srgba(&mut w_t);
+
+        if ui.color_edit_button_srgba(&mut w_t).changed() {
+            is_color_changed = true;
+        }
+
         ui.label("white bottom color");
-        ui.color_edit_button_srgba(&mut w_b);
+        if ui.color_edit_button_srgba(&mut w_b).changed() {
+            is_color_changed = true;
+        }
         ui.checkbox(&mut config.sync_white_notes, "sync white notes");
 
         ui.label("black top color");
-        ui.color_edit_button_srgba(&mut b_t);
+        if ui.color_edit_button_srgba(&mut b_t).changed() {
+            is_color_changed = true;
+        }
         ui.label("black bottom color");
-        ui.color_edit_button_srgba(&mut b_b);
+        if ui.color_edit_button_srgba(&mut b_b).changed() {
+            is_color_changed = true;
+        }
         ui.checkbox(&mut config.sync_black_notes, "sync black notes");
         ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
         let k_height = ui.add(
@@ -101,9 +113,13 @@ pub fn ui_config_system(
         ui.label("keyboard black color");
         let b_color = ui.color_edit_button_srgba(&mut k_b);
         ui.label("keyboard white active color");
-        ui.color_edit_button_srgba(&mut k_w_a);
+        if ui.color_edit_button_srgba(&mut k_w_a).changed() {
+            is_color_changed = true;
+        }
         ui.label("keyboard black active color");
-        ui.color_edit_button_srgba(&mut k_b_a);
+        if ui.color_edit_button_srgba(&mut k_b_a).changed() {
+            is_color_changed = true;
+        }
         ui.checkbox(
             &mut config.sync_keyboard_active_color,
             "sync active keyboard keys",
@@ -114,12 +130,18 @@ pub fn ui_config_system(
         if ui.button("save default").clicked() {
             save_config(&config);
         }
-        if ui.button("load default").clicked() {
+        let load_default_button = ui.button("load default");
+        if load_default_button.clicked() {
             load_config(&mut config);
+        }
+
+        if w_color.changed() || b_color.changed() || felt.changed() {
+            is_color_changed = true;
         }
 
         let keyboard_gen_button = ui.add(egui::Button::new("Generate Keyboard"));
         if s_note.changed()
+            || load_default_button.clicked()
             || e_note.changed()
             || keyboard_gen_button.clicked()
             || k_height.changed()
@@ -164,22 +186,18 @@ pub fn ui_config_system(
     if config.sync_keyboard_active_color {
         k_b_a = k_w_a;
     }
-    config.white_color_top = compress_color(w_t);
-    config.white_color_bottom = compress_color(w_b);
-    config.black_color_top = compress_color(b_t);
-    config.black_color_bottom = compress_color(b_b);
+    if (is_color_changed) {
+        config.white_color_top = compress_color(w_t);
+        config.white_color_bottom = compress_color(w_b);
+        config.black_color_top = compress_color(b_t);
+        config.black_color_bottom = compress_color(b_b);
 
-    config.keyboard_white_color = compress_color(k_w);
-    config.keyboard_white_color_active = compress_color(k_w_a);
-    config.keyboard_black_color = compress_color(k_b);
-    config.keyboard_black_color_active = compress_color(k_b_a);
-    config.keyboard_felt_color = compress_color(k_f);
-
-    egui::Window::new("Load config").show(contexts.ctx_mut(), |ui| {
-        if ui.button("load default").clicked() {
-            load_config(&mut config);
-        }
-    });
+        config.keyboard_white_color = compress_color(k_w);
+        config.keyboard_white_color_active = compress_color(k_w_a);
+        config.keyboard_black_color = compress_color(k_b);
+        config.keyboard_black_color_active = compress_color(k_b_a);
+        config.keyboard_felt_color = compress_color(k_f);
+    }
 }
 
 fn compress_color(color: egui::Color32) -> Srgba {
@@ -362,26 +380,26 @@ fn load_config(config: &mut Configuration) {
             "note_speed" => {
                 config.note_speed = values[1].parse::<f32>().unwrap();
             }
-            "starting_note"=>{
-                config.starting_note=values[1].parse().unwrap();
+            "starting_note" => {
+                config.starting_note = values[1].parse().unwrap();
             }
-            "keyboard_height"=>{
-                config.keyboard_height=values[1].parse().unwrap();
+            "keyboard_height" => {
+                config.keyboard_height = values[1].parse().unwrap();
             }
-            "ending_note"=>{
-                config.ending_note=values[1].parse().unwrap();
+            "ending_note" => {
+                config.ending_note = values[1].parse().unwrap();
             }
-            "enable_bloom"=>{
-                config.enable_bloom=values[1].parse().unwrap();
+            "enable_bloom" => {
+                config.enable_bloom = values[1].parse().unwrap();
             }
-            "note_width"=>{
-                config.note_width=values[1].parse().unwrap();
+            "note_width" => {
+                config.note_width = values[1].parse().unwrap();
             }
-            "sync_white_notes"=>{
-                config.sync_white_notes=values[1].parse().unwrap();
+            "sync_white_notes" => {
+                config.sync_white_notes = values[1].parse().unwrap();
             }
-            "sync_black_notes"=>{
-                config.sync_black_notes=values[1].parse().unwrap();
+            "sync_black_notes" => {
+                config.sync_black_notes = values[1].parse().unwrap();
             }
             "show_keyboard" => {
                 config.show_keyboard = values[1].parse().unwrap();
