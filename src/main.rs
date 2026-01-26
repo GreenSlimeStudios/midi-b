@@ -15,7 +15,7 @@ use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::{stdin, stdout, Write};
-use std::sync::{Arc, Mutex};
+// use std::sync::{Arc, Mutex};
 // use std::thread::JoinHandle;
 use bevy::window::WindowResized;
 

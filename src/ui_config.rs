@@ -3,10 +3,13 @@ extern crate midir;
 // use bevy::ecs::query::QueryFilter;
 // use bevy::gizmos::config;
 
-use bevy::{prelude::*, scene::ron::value};
+use bevy::prelude::*;
 
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use std::fs::read_to_string;
+use bevy_egui::{
+    egui::{self, TextEdit},
+    EguiContexts, EguiPlugin,
+};
+use std::{fs::read_to_string, path::Path};
 
 // use std::thread::JoinHandle;
 use crate::*;
@@ -132,7 +135,25 @@ pub fn ui_config_system(
         }
         let load_default_button = ui.button("load default");
         if load_default_button.clicked() {
-            load_config(&mut config);
+            load_config(&mut config,"./saves/default.sav");
+        }
+        let mut save_file_name: String = "".to_string();
+        // ui.text_edit_singleline(&mut save_file_name);
+        ui.add(TextEdit::singleline(&mut save_file_name));
+
+        ui.label("Load from save file");
+        for entry in fs::read_dir("./saves/").unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_file() {
+                if path.display().to_string().ends_with(".sav") {
+                    let save_name = path.file_stem().unwrap().to_string_lossy();
+                    if ui.button(save_name).clicked(){
+                        load_config(&mut config,&path.display().to_string().as_str());
+                    }
+                    // println!("{}", &save_name);
+                }
+            }
         }
 
         if w_color.changed() || b_color.changed() || felt.changed() {
@@ -186,7 +207,7 @@ pub fn ui_config_system(
     if config.sync_keyboard_active_color {
         k_b_a = k_w_a;
     }
-    if (is_color_changed) {
+    if is_color_changed {
         config.white_color_top = compress_color(w_t);
         config.white_color_bottom = compress_color(w_b);
         config.black_color_top = compress_color(b_t);
@@ -247,13 +268,17 @@ fn save_config(config: &Configuration) {
         .as_str(),
     );
 
-    let mut ofile = File::create("save_default.txt").expect("unable to create file");
+    let mut ofile = File::create("./saves/default.sav").expect("unable to create file");
 
     ofile.write_all(out.as_bytes()).expect("unable to write");
 }
 
-fn load_config(config: &mut Configuration) {
-    for line in read_to_string("save_default.txt").unwrap().lines() {
+fn load_config(config: &mut Configuration,path: &str) {
+    // for line in read_to_string("./saves/save_default.sav.txt")
+    for line in read_to_string(path)
+        .unwrap()
+        .lines()
+    {
         let values: Vec<&str> = line.split(":").collect();
         println!("{}:{}", &values[0], &values[1]);
         match values[0] {
