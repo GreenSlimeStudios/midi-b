@@ -6,10 +6,10 @@ extern crate midir;
 use bevy::prelude::*;
 
 use bevy_egui::{
-    egui::{self, TextBuffer, TextEdit},
+    egui::{self, RichText, TextEdit},
     EguiContexts, EguiPlugin,
 };
-use std::{fs::read_to_string, path::Path};
+use std::fs::read_to_string;
 
 // use std::thread::JoinHandle;
 use crate::*;
@@ -66,31 +66,58 @@ pub fn ui_config_system(
     let mut is_color_changed: bool = false;
 
     egui::Window::new("Config").show(contexts.ctx_mut(), |ui| {
-        ui.label("baka");
-        ui.label("white top color");
+        // ui.label("baka");
 
-        if ui.color_edit_button_srgba(&mut w_t).changed() {
-            is_color_changed = true;
-        }
+        ui.label("Color of notes played");
+        // ui.heading("Color of notes played");
+        // ui.add_space(4.);
 
-        ui.label("white bottom color");
-        if ui.color_edit_button_srgba(&mut w_b).changed() {
-            is_color_changed = true;
-        }
-        ui.checkbox(&mut config.sync_white_notes, "sync white notes");
+        // ui.separator();
+        egui::Grid::new("note_color").show(ui, |ui| {
+            ui.label("");
+            ui.label("top");
+            ui.label("bottom");
+            ui.label("sync").on_hover_text(
+                "when enabled the note will be a solid if not you can make a gradient",
+            );
+            ui.end_row();
 
-        ui.label("black top color");
-        if ui.color_edit_button_srgba(&mut b_t).changed() {
-            is_color_changed = true;
-        }
-        ui.label("black bottom color");
-        if ui.color_edit_button_srgba(&mut b_b).changed() {
-            is_color_changed = true;
-        }
-        ui.checkbox(&mut config.sync_black_notes, "sync black notes");
+            // ui.label("white top color");
+
+            ui.label("white");
+            if ui.color_edit_button_srgba(&mut w_t).changed() {
+                is_color_changed = true;
+            }
+
+            // ui.label("white bottom color");
+            if ui.color_edit_button_srgba(&mut w_b).changed() {
+                is_color_changed = true;
+            }
+            ui.checkbox(&mut config.sync_white_notes, "").on_hover_text(
+                "when enabled the note will be a solid if not you can make a gradient",
+            );
+
+            ui.end_row();
+
+            ui.label("black");
+            // ui.label("black top color");
+            if ui.color_edit_button_srgba(&mut b_t).changed() {
+                is_color_changed = true;
+            }
+            // ui.label("black bottom color");
+            if ui.color_edit_button_srgba(&mut b_b).changed() {
+                is_color_changed = true;
+            }
+            ui.checkbox(&mut config.sync_black_notes, "").on_hover_text(
+                "when enabled the note will be a solid if not you can make a gradient",
+            );
+        });
+        ui.spacing();
+        ui.separator();
+
         ui.add(egui::Slider::new(&mut config.note_speed, 100.0..=300.0).text("note speed"));
         let k_height = ui.add(
-            egui::Slider::new(&mut config.keyboard_height, 100.0..=300.0).text("keyboard height"),
+            egui::Slider::new(&mut config.keyboard_height, 0.0..=300.0).text("keyboard height"),
         );
         let s_note =
             ui.add(egui::Slider::new(&mut config.starting_note, 21..=108).text("starting note"));
@@ -111,34 +138,66 @@ pub fn ui_config_system(
                 config.bloom_composite_mode = BloomCompositeMode::EnergyConserving;
             }
         }
-        ui.label("keyboard white color");
-        let w_color = ui.color_edit_button_srgba(&mut k_w);
-        ui.label("keyboard black color");
-        let b_color = ui.color_edit_button_srgba(&mut k_b);
-        ui.label("keyboard white active color");
-        if ui.color_edit_button_srgba(&mut k_w_a).changed() {
-            is_color_changed = true;
-        }
-        ui.label("keyboard black active color");
-        if ui.color_edit_button_srgba(&mut k_b_a).changed() {
-            is_color_changed = true;
-        }
+
+        // let mut w_color: Response;
+        // let mut b_color: Response;
+
+        ui.separator();
+        // ui.label("Keyboard colors");
+        ui.label(RichText::new("keyboard colors"));
+        // ui.separator();
+        egui::Grid::new("keyboard_color").show(ui, |ui| {
+            ui.label("");
+            ui.label("idle").on_hover_text(
+                "color of white notes on keyboard while inactive (currently not being pressed)",
+            );
+            ui.label("active").on_hover_text(
+                "color of black notes on keyboard while active (currently pressed) ",
+            );
+
+            ui.end_row();
+
+            ui.label("white");
+            // ui.label("keyboard white color");
+            if ui.color_edit_button_srgba(&mut k_w).changed() {
+                is_color_changed = true;
+            }
+            // ui.label("keyboard white active color");
+            if ui.color_edit_button_srgba(&mut k_w_a).changed() {
+                is_color_changed = true;
+            }
+
+            ui.end_row();
+
+            ui.label("black");
+            // ui.label("keyboard black color");
+            if ui.color_edit_button_srgba(&mut k_b).changed() {
+                is_color_changed = true;
+            }
+            // ui.label("keyboard black active color");
+            if ui.color_edit_button_srgba(&mut k_b_a).changed() {
+                is_color_changed = true;
+            }
+
+            ui.end_row();
+
+            ui.label("felt");
+            if ui.color_edit_button_srgba(&mut k_f).changed() {
+                is_color_changed = true;
+            }
+        });
         ui.checkbox(
             &mut config.sync_keyboard_active_color,
             "sync active keyboard keys",
         );
-        ui.label("keyboard felt color");
-        let felt = ui.color_edit_button_srgba(&mut k_f);
 
-        // if ui.button("save default").clicked() {
-        //     save_config(&config, "./saves/default.sav");
-        // }
+        ui.separator();
+
         let load_default_button = ui.button("load default settings");
         if load_default_button.clicked() {
             load_config(&mut config, "./saves/do_not_alter.sav.txt");
         }
-        // let mut save_file_name: String = "".to_string();
-        // ui.text_edit_singleline(&mut save_file_name);
+
         ui.horizontal(|ui| {
             ui.add(
                 TextEdit::singleline(&mut config.save_file_name).hint_text("enter save file name"),
@@ -150,8 +209,10 @@ pub fn ui_config_system(
                 );
             }
         });
+        ui.separator();
+        let mut config_loaded: bool = false;
 
-        ui.label("Load from save file");
+        ui.label("Detected save files");
         for entry in fs::read_dir("./saves/").unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
@@ -161,6 +222,7 @@ pub fn ui_config_system(
                     ui.horizontal(|ui| {
                         if ui.button("Load").clicked() {
                             load_config(&mut config, &path.display().to_string().as_str());
+                            config_loaded = true;
                         }
                         if ui.button("Save").clicked() {
                             save_config(&mut config, &path.display().to_string().as_str());
@@ -184,19 +246,15 @@ pub fn ui_config_system(
             }
         }
 
-        if w_color.changed() || b_color.changed() || felt.changed() {
-            is_color_changed = true;
-        }
-
+        ui.separator();
         let keyboard_gen_button = ui.add(egui::Button::new("Generate Keyboard"));
         if s_note.changed()
             || load_default_button.clicked()
             || e_note.changed()
             || keyboard_gen_button.clicked()
             || k_height.changed()
-            || felt.changed()
-            || w_color.changed()
-            || b_color.changed()
+            || is_color_changed
+            || config_loaded
         {
             note_offset.offset = count_whites(21, config.starting_note, &notes_placement.blacks);
             note_offset.whites_count = count_whites(
