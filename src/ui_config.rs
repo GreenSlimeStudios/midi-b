@@ -6,7 +6,7 @@ extern crate midir;
 use bevy::prelude::*;
 
 use bevy_egui::{
-    egui::{self, TextEdit},
+    egui::{self, TextBuffer, TextEdit},
     EguiContexts, EguiPlugin,
 };
 use std::{fs::read_to_string, path::Path};
@@ -130,16 +130,26 @@ pub fn ui_config_system(
         ui.label("keyboard felt color");
         let felt = ui.color_edit_button_srgba(&mut k_f);
 
-        if ui.button("save default").clicked() {
-            save_config(&config);
-        }
-        let load_default_button = ui.button("load default");
+        // if ui.button("save default").clicked() {
+        //     save_config(&config, "./saves/default.sav");
+        // }
+        let load_default_button = ui.button("load default settings");
         if load_default_button.clicked() {
-            load_config(&mut config,"./saves/default.sav");
+            load_config(&mut config, "./saves/do_not_alter.sav.txt");
         }
-        let mut save_file_name: String = "".to_string();
+        // let mut save_file_name: String = "".to_string();
         // ui.text_edit_singleline(&mut save_file_name);
-        ui.add(TextEdit::singleline(&mut save_file_name));
+        ui.horizontal(|ui| {
+            ui.add(
+                TextEdit::singleline(&mut config.save_file_name).hint_text("enter save file name"),
+            );
+            if ui.button("add").clicked() && !config.save_file_name.is_empty() {
+                save_config(
+                    &config,
+                    &("./saves/".to_owned() + config.save_file_name.as_str() + ".sav"),
+                );
+            }
+        });
 
         ui.label("Load from save file");
         for entry in fs::read_dir("./saves/").unwrap() {
@@ -148,9 +158,27 @@ pub fn ui_config_system(
             if path.is_file() {
                 if path.display().to_string().ends_with(".sav") {
                     let save_name = path.file_stem().unwrap().to_string_lossy();
-                    if ui.button(save_name).clicked(){
-                        load_config(&mut config,&path.display().to_string().as_str());
-                    }
+                    ui.horizontal(|ui| {
+                        if ui.button("Load").clicked() {
+                            load_config(&mut config, &path.display().to_string().as_str());
+                        }
+                        if ui.button("Save").clicked() {
+                            save_config(&mut config, &path.display().to_string().as_str());
+                        }
+                        if ui.button("Delete").clicked() {
+                            match fs::remove_file(path.clone()) {
+                                Ok(a) => {
+                                    println!("removed config file {:?}", a)
+                                }
+                                Err(e) => {
+                                    println!("error removing config file: {:?}", e);
+                                }
+                            }
+                        }
+
+                        ui.label(save_name + "");
+                    });
+
                     // println!("{}", &save_name);
                 }
             }
@@ -241,7 +269,7 @@ fn format_color(color: Srgba) -> String {
     out
 }
 
-fn save_config(config: &Configuration) {
+fn save_config(config: &Configuration, path: &str) {
     let mut out: String = String::new();
 
     out.push_str(
@@ -268,17 +296,14 @@ fn save_config(config: &Configuration) {
         .as_str(),
     );
 
-    let mut ofile = File::create("./saves/default.sav").expect("unable to create file");
+    let mut ofile = File::create(path).expect("unable to create file");
 
     ofile.write_all(out.as_bytes()).expect("unable to write");
 }
 
-fn load_config(config: &mut Configuration,path: &str) {
+fn load_config(config: &mut Configuration, path: &str) {
     // for line in read_to_string("./saves/save_default.sav.txt")
-    for line in read_to_string(path)
-        .unwrap()
-        .lines()
-    {
+    for line in read_to_string(path).unwrap().lines() {
         let values: Vec<&str> = line.split(":").collect();
         println!("{}:{}", &values[0], &values[1]);
         match values[0] {

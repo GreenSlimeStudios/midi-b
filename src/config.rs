@@ -55,12 +55,13 @@ impl Plugin for ConfigPlugin {
             sync_keyboard_active_color: false,
             starting_note: STARTING_NOTE,
             ending_note: ENDING_NOTE,
-            background_color:BLACK,
+            background_color: BLACK,
+            save_file_name: "".to_string(),
         });
     }
 }
 
-#[derive(Resource, Clone, Copy, Debug)]
+#[derive(Resource, Clone, Debug)]
 pub struct Configuration {
     pub starting_note: i8,
     pub ending_note: i8,
@@ -90,4 +91,5 @@ pub struct Configuration {
     // pub vertex_colors_keyboard_blacks: Vec<[f32; 4]>,
     // pub vertex_colors: Vec<[f32; 4]>,
     // pub vertex_colors_blacks: Vec<[f32; 4]>,
+    pub save_file_name: String,
 }
