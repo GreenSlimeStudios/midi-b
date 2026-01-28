@@ -19,14 +19,12 @@ use std::io::{stdin, stdout, Write};
 // use std::thread::JoinHandle;
 use bevy::window::WindowResized;
 
+pub mod config;
+pub mod keyboard;
 pub mod midi_flow;
 pub mod ui_config;
-pub mod keyboard;
-pub mod config;
-use keyboard::*;
 use config::Configuration;
-
-
+use keyboard::*;
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -43,7 +41,6 @@ fn main() {
         .add_plugins(config::ConfigPlugin)
         .add_systems(Startup, setup)
         .insert_resource(ClearColor(Color::BLACK))
-     
         .insert_resource(NotePlacemnt {
             notes_position: HashMap::new(),
             blacks: Vec::new(),
@@ -56,7 +53,6 @@ fn main() {
             offset: 0f32,
             whites_count: 52f32,
         })
-
         .add_systems(Update, window_resize_system)
         // .add_systems(Update, ui_config_system)
         .add_systems(Startup, note_placement)
@@ -68,6 +64,7 @@ fn main() {
         .add_systems(Update, move_notes)
         .add_systems(Update, notes_spawner)
         .add_systems(Update, grow_notes)
+        .add_systems(Update, update_background_color_system)
         .run();
 }
 fn window_resize_system(
@@ -113,7 +110,6 @@ pub struct NoteOffset {
 
 fn run(args: &Vec<String>) -> Result<(), Box<dyn Error>> {
     midi_flow::midi_flow_stream(args)
-   
 }
 fn setup(mut commands: Commands) {
     // commands.spawn((
@@ -530,4 +526,11 @@ fn count_whites(start: i8, end: i8, blacks: &Vec<i8>) -> f32 {
     }
     println!("{} {} {}", start, end, count);
     count
+}
+
+fn update_background_color_system(
+    config: Res<Configuration>,
+    mut background_color: ResMut<ClearColor>,
+) {
+    *background_color = ClearColor(Color::from(config.background_color));
 }

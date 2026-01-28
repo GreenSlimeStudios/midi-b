@@ -6,7 +6,7 @@ extern crate midir;
 use bevy::prelude::*;
 
 use bevy_egui::{
-    egui::{self, RichText, TextEdit},
+    egui::{self, RichText, TextBuffer, TextEdit},
     EguiContexts, EguiPlugin,
 };
 use std::fs::read_to_string;
@@ -52,6 +52,10 @@ pub fn ui_config_system(
     let white_bottom = config.white_color_bottom.to_f32_array();
     let black_top = config.black_color_top.to_f32_array();
     let black_bottom = config.black_color_bottom.to_f32_array();
+    let background_color = config.background_color.to_f32_array();
+
+    let mut b_c = decimal_to_intiger_color(&background_color);
+
     let mut w_t = decimal_to_intiger_color(&white_top);
     let mut w_b = decimal_to_intiger_color(&white_bottom);
     let mut b_t = decimal_to_intiger_color(&black_top);
@@ -185,11 +189,21 @@ pub fn ui_config_system(
             if ui.color_edit_button_srgba(&mut k_f).changed() {
                 is_color_changed = true;
             }
+            ui.end_row();
+            ui.label("background");
+            if ui.color_edit_button_srgba(&mut b_c).changed() {
+                is_color_changed = true;
+            }
         });
-        ui.checkbox(
-            &mut config.sync_keyboard_active_color,
-            "sync active keyboard keys",
-        );
+        if ui
+            .checkbox(
+                &mut config.sync_keyboard_active_color,
+                "sync active keyboard keys",
+            )
+            .changed()
+        {
+            is_color_changed = true;
+        };
 
         ui.separator();
 
@@ -304,6 +318,8 @@ pub fn ui_config_system(
         config.keyboard_black_color = compress_color(k_b);
         config.keyboard_black_color_active = compress_color(k_b_a);
         config.keyboard_felt_color = compress_color(k_f);
+
+        config.background_color = compress_color(b_c);
     }
 }
 
@@ -332,8 +348,8 @@ fn save_config(config: &Configuration, path: &str) {
 
     out.push_str(
         format!(
-            "note_speed:{}\nstarting_note:{}\nending_note:{}\nenable_bloom:{}\nnote_width:{}\nsync_white_notes:{}\nsync_black_notes:{}\nsync_keyboard_active_color:{}\nkeyboard_height:{}\nshow_keyboard:{}\n",
-            config.note_speed, config.starting_note, config.ending_note, config.enable_bloom,config.note_width,config.sync_white_notes,config.sync_black_notes,config.sync_keyboard_active_color,config.keyboard_height,config.show_keyboard
+            "note_speed:{}\nstarting_note:{}\nending_note:{}\nenable_bloom:{}\nbloom_intensity:{}\nnote_width:{}\nsync_white_notes:{}\nsync_black_notes:{}\nsync_keyboard_active_color:{}\nkeyboard_height:{}\nshow_keyboard:{}\n",
+            config.note_speed, config.starting_note, config.ending_note, config.enable_bloom,config.bloom_intensity,config.note_width,config.sync_white_notes,config.sync_black_notes,config.sync_keyboard_active_color,config.keyboard_height,config.show_keyboard
         )
         .as_str(),
     );
@@ -350,6 +366,17 @@ fn save_config(config: &Configuration, path: &str) {
             format_color(config.keyboard_white_color_active),
             format_color(config.keyboard_felt_color),
             format_color(config.background_color),
+        )
+        .as_str(),
+    );
+
+    out.push_str(
+        format!(
+            "bloom_composite_mode:{}\n",
+            match config.bloom_composite_mode {
+                BloomCompositeMode::Additive => "additive",
+                BloomCompositeMode::EnergyConserving => "efficent",
+            }
         )
         .as_str(),
     );
@@ -491,6 +518,9 @@ fn load_config(config: &mut Configuration, path: &str) {
             "starting_note" => {
                 config.starting_note = values[1].parse().unwrap();
             }
+            "bloom_intensity" => {
+                config.bloom_intensity = values[1].parse().unwrap();
+            }
             "keyboard_height" => {
                 config.keyboard_height = values[1].parse().unwrap();
             }
@@ -515,6 +545,13 @@ fn load_config(config: &mut Configuration, path: &str) {
             "sync_keyboard_active_color" => {
                 config.sync_keyboard_active_color = values[1].parse().unwrap();
             }
+            "bloom_composite_mode" => match values[1] {
+                "efficent" => config.bloom_composite_mode = BloomCompositeMode::EnergyConserving,
+                "additive" => config.bloom_composite_mode = BloomCompositeMode::Additive,
+                _ => {
+                    println!("invalide bloom composite mode");
+                }
+            },
             _ => {
                 println!("detected unknown config line: {}", &values[0]);
             }

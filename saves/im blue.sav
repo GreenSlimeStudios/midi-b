@@ -2,6 +2,7 @@ note_speed:150
 starting_note:21
 ending_note:108
 enable_bloom:false
+bloom_intensity:0.25
 note_width:15
 sync_white_notes:true
 sync_black_notes:true
@@ -17,4 +18,5 @@ keyboard_black_active:0.359375,0.6171875,0.6328125,0.99609375
 keyboard_white:0.99609375,0.99609375,0.99609375,0.99609375
 keyboard_white_active:0.4609375,0.76953125,0.79296875,0.99609375
 keyboard_felt:0.33984375,0.671875,0.875,0.99609375
-background_color:0,0,0,1
+background_color:0,0.12890625,0.1796875,0.99609375
+bloom_composite_mode:efficent
