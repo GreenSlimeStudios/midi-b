@@ -47,13 +47,17 @@ pub fn ui_config_system(
     commands: Commands,
     keyboard_note_meshes: ResMut<KeyboardNoteMeshes>,
     mut note_offset: ResMut<NoteOffset>,
+
+    mut app_background_color: ResMut<ClearColor>,
 ) {
     let white_top = config.white_color_top.to_f32_array();
     let white_bottom = config.white_color_bottom.to_f32_array();
     let black_top = config.black_color_top.to_f32_array();
     let black_bottom = config.black_color_bottom.to_f32_array();
     let background_color = config.background_color.to_f32_array();
+    let keyboard_filler_color = config.keyboard_filler_color.to_f32_array();
 
+    let mut k_f_c = decimal_to_intiger_color(&keyboard_filler_color);
     let mut b_c = decimal_to_intiger_color(&background_color);
 
     let mut w_t = decimal_to_intiger_color(&white_top);
@@ -190,8 +194,15 @@ pub fn ui_config_system(
                 is_color_changed = true;
             }
             ui.end_row();
-            ui.label("background");
+            ui.label("back");
             if ui.color_edit_button_srgba(&mut b_c).changed() {
+                is_color_changed = true;
+            }
+            ui.end_row();
+            ui.label("fill").on_hover_text(
+                "the color that is filled in between the keys on the virtual keyboard",
+            );
+            if ui.color_edit_button_srgba(&mut k_f_c).changed() {
                 is_color_changed = true;
             }
         });
@@ -288,6 +299,8 @@ pub fn ui_config_system(
                 keyboard_note_meshes,
                 &note_offset,
             );
+
+            *app_background_color = ClearColor(Color::from(config.background_color));
         }
     });
     for mut bs in &mut bloom_settings {
@@ -320,6 +333,7 @@ pub fn ui_config_system(
         config.keyboard_felt_color = compress_color(k_f);
 
         config.background_color = compress_color(b_c);
+        config.keyboard_filler_color = compress_color(k_f_c);
     }
 }
 
@@ -355,7 +369,7 @@ fn save_config(config: &Configuration, path: &str) {
     );
     out.push_str(
         format!(
-            "white_top:{}\nwhite_bottom:{}\nblack_top:{}\nblack_bottom:{}\nkeyboard_black:{}\nkeyboard_black_active:{}\nkeyboard_white:{}\nkeyboard_white_active:{}\nkeyboard_felt:{}\nbackground_color:{}\n",
+            "white_top:{}\nwhite_bottom:{}\nblack_top:{}\nblack_bottom:{}\nkeyboard_black:{}\nkeyboard_black_active:{}\nkeyboard_white:{}\nkeyboard_white_active:{}\nkeyboard_felt:{}\nkeyboard_filler:{}\nbackground_color:{}\n",
             format_color(config.white_color_top),
             format_color(config.white_color_bottom),
             format_color(config.black_color_top),
@@ -365,6 +379,7 @@ fn save_config(config: &Configuration, path: &str) {
             format_color(config.keyboard_white_color),
             format_color(config.keyboard_white_color_active),
             format_color(config.keyboard_felt_color),
+            format_color(config.keyboard_filler_color),
             format_color(config.background_color),
         )
         .as_str(),
@@ -494,6 +509,18 @@ fn load_config(config: &mut Configuration, path: &str) {
                     .filter_map(|x| x.parse::<f32>().ok())
                     .collect();
                 config.keyboard_felt_color = Srgba {
+                    red: colors[0],
+                    green: colors[1],
+                    blue: colors[2],
+                    alpha: colors[3],
+                };
+            }
+            "keyboard_filler" => {
+                let colors: Vec<f32> = values[1]
+                    .split(",")
+                    .filter_map(|x| x.parse::<f32>().ok())
+                    .collect();
+                config.keyboard_filler_color = Srgba {
                     red: colors[0],
                     green: colors[1],
                     blue: colors[2],

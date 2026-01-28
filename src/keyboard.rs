@@ -175,6 +175,8 @@ pub fn draw_keyboard(
         keyboard_note_meshes
             .keyboard_handles
             .push((i as i32, mesh_handle));
+
+        // felt
         commands.spawn((
             MaterialMesh2dBundle {
                 mesh: meshes.add(Rectangle::new(res.width(), 6.)).into(),
@@ -186,6 +188,26 @@ pub fn draw_keyboard(
                     0., //-res.width() / 2.,
                     -res.height() / 2. + config.keyboard_height,
                     2.,
+                ),
+                ..default()
+            },
+            KeyboardElement {},
+        ));
+
+        // keyboard filler color
+        commands.spawn((
+            MaterialMesh2dBundle {
+                mesh: meshes
+                    .add(Rectangle::new(res.width(), config.keyboard_height))
+                    .into(),
+                material: materials.add(ColorMaterial {
+                    color: config.keyboard_filler_color.into(),
+                    ..Default::default()
+                }),
+                transform: Transform::from_xyz(
+                    0., //-res.width() / 2.,
+                    -res.height() / 2. + config.keyboard_height / 2.,
+                    0.5,
                 ),
                 ..default()
             },

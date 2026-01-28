@@ -64,7 +64,7 @@ fn main() {
         .add_systems(Update, move_notes)
         .add_systems(Update, notes_spawner)
         .add_systems(Update, grow_notes)
-        .add_systems(Update, update_background_color_system)
+        // .add_systems(Update, update_background_color_system)
         .run();
 }
 fn window_resize_system(
@@ -528,9 +528,9 @@ fn count_whites(start: i8, end: i8, blacks: &Vec<i8>) -> f32 {
     count
 }
 
-fn update_background_color_system(
-    config: Res<Configuration>,
-    mut background_color: ResMut<ClearColor>,
-) {
-    *background_color = ClearColor(Color::from(config.background_color));
-}
+// fn update_background_color_system(
+//     config: Res<Configuration>,
+//     mut background_color: ResMut<ClearColor>,
+// ) {
+//     *background_color = ClearColor(Color::from(config.background_color));
+// }
